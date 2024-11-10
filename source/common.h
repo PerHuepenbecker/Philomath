@@ -2,8 +2,8 @@
 // Created by Per Hüpenbecker on 10.11.24.
 //
 
-#ifndef SIMPLELINEARREGRESSION_COMMON_H
-#define SIMPLELINEARREGRESSION_COMMON_H
+#ifndef LINEARREGRESSION_C_COMMON_H
+#define LINEARREGRESSION_C_COMMON_H
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -51,4 +51,4 @@ void dataset_destroy(dataset_t* dataset) {
 
 
 
-#endif //SIMPLELINEARREGRESSION_COMMON_H
+#endif //LINEARREGRESSION_COMMON_H
