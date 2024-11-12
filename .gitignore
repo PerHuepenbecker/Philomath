@@ -57,3 +57,5 @@ cmake-build*
 # Idea
 .idea
 
+# Testing
+test.data
