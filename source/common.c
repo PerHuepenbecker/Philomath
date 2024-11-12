@@ -26,6 +26,27 @@ void dataset_destroy(dataset_t* dataset) {
     free(dataset -> data_pool);
 }
 
+bool dataset_init_from_csv(dataset_t* dataset, const char* file_path){
+    FILE* file = fopen(file_path, "r");
+    if (!file){
+        fprintf(stderr, "Error: Could not open file\n");
+        return false;
+    }
+
+    char* read_buffer = malloc(sizeof(char) * 1024);
+    if (!read_buffer){
+        fprintf(stderr, "File: Memory allocation for buffer failed\n");
+        return false;
+    }
+
+    size_t x_dimensions = 0;
+    size_t data_points_count = 0;
+
+    free(read_buffer);
+    fclose(file);
+    return true;
+}
+
 
 void dataset_push_data_point(dataset_t* dataset, double* x, size_t x_dimensions, double y) {
     if (x_dimensions != dataset -> x_dimensions) {
@@ -47,6 +68,14 @@ void dataset_push_data_point(dataset_t* dataset, double* x, size_t x_dimensions,
 
         dataset -> data_points = tmp;
 
+        // Update of the stored pointers of the data_points array structs. Neccessary because
+        // realloc might invalidate the existing pointers on reallocation.
+
+        for(size_t i = 0; i < dataset->data_points_count; i++){
+            dataset->data_points[i].x = &dataset->data_pool[i * (x_dimensions + 1)];
+            dataset->data_points[i].y = &dataset->data_pool[i * (x_dimensions + 1) + x_dimensions];
+        }
+
         tmp = realloc(dataset -> data_pool, sizeof(double) * GROWTH_FACTOR * (x_dimensions + 1));
         if(tmp == NULL){
             fprintf(stderr, "Error: Memory allocation failed\n");
@@ -65,5 +94,5 @@ void dataset_push_data_point(dataset_t* dataset, double* x, size_t x_dimensions,
     dataset -> data_points[dataset -> data_points_count].x = &dataset -> data_pool[dataset -> data_points_count * (x_dimensions + 1)];
     dataset -> data_points[dataset -> data_points_count].y = &dataset -> data_pool[dataset -> data_points_count * (x_dimensions + 1) + x_dimensions];
     dataset -> data_points_count++;
-
 }
+

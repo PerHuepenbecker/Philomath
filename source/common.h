@@ -5,9 +5,11 @@
 #ifndef LINEARREGRESSION_C_COMMON_H
 #define LINEARREGRESSION_C_COMMON_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
-#include "stdio.h"
+#include <stdio.h>
+#include <string.h>
 
 #define GROWTH_FACTOR 2
 #define GROWTH_THRESHOLD 1<<20
@@ -36,7 +38,7 @@ typedef struct {
     double* data_pool;
 } dataset_t;
 
-void dataset_t_init_from_csv(dataset_t* dataset, const char* file_path);
+bool dataset_t_init_from_csv(dataset_t* dataset, const char* file_path);
 
 void dataset_t_init(dataset_t* dataset, size_t x_dimensions);
 
