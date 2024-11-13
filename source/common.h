@@ -14,6 +14,7 @@
 #define GROWTH_FACTOR 2
 #define GROWTH_THRESHOLD 1<<20
 #define INITIAL_CAPACITY 10
+#define STANDARD_BUFFER_SIZE 1024
 
 // Standard DataPoint struct for x and y values. The attributes x and y are defined as pointers to
 // allow for separate caching of the values.
@@ -22,6 +23,14 @@ typedef struct {
     double* x;
     double* y;
 } data_point_t;
+
+// Enum for the different parsing modes of the CSV file.
+
+enum ParseMode {
+    READ_DATA_POINTS,
+    READ_X_DIMENSIONS,
+    READ_COLUMN_NAMES
+};
 
 // Data structure for handling the dataset consisting of DataPoints + Owner of all allocated
 // memory for the DataPoints.
