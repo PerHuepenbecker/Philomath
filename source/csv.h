@@ -42,7 +42,7 @@ typedef struct {
         char delimiter;
         bool has_header;
         char* line_buffer;
-        char** token_buffer;
+        char** token_pointers;
         size_t column_count;
         size_t line_buffer_size;
         size_t line_length;
@@ -62,6 +62,6 @@ typedef enum{
 int csv_parser_t_init_std(csv_parser_t* parser);
 int csv_parser_t_destroy(csv_parser_t* parser);
 
-int read_csv(const char* filename, csv_parser_args_t* args, csv_callback_t callback);
+int csv_parser_parse(const char* file_path, csv_parser_t* parser, csv_callback_t callback);
 
 #endif //SIMPLELINEARREGRESSION_CSV_H

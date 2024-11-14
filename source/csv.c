@@ -18,7 +18,7 @@ int csv_parser_t_init_std(csv_parser_t* parser){
     if (!parser->line_buffer){
         return -1;
     }
-    parser->token_buffer = NULL;
+    parser->token_pointers = NULL;
     parser->column_count = 0;
     parser->line_buffer_size = STANDARD_LINE_BUFFER_SIZE;
     parser->line_length = 0;
@@ -33,11 +33,11 @@ int csv_parser_t_destroy(csv_parser_t* parser){
         return -1;
     }
     free(parser->line_buffer);
-    if(parser->token_buffer){
+    if(parser->token_pointers){
         for (size_t i = 0; i <parser->column_count; i++){
-            free(parser->token_buffer[i]);
+            free(parser->token_pointers[i]);
         }
-        free(parser->token_buffer);
+        free(parser->token_pointers);
     }
     if(parser->column_names){
         for (size_t i = 0; i < parser->column_count; i++){
@@ -47,6 +47,14 @@ int csv_parser_t_destroy(csv_parser_t* parser){
     }
     return 0;
 }
+
+static QuoteFlag csv_parser_eval_quote_flag(QuoteFlag flag){
+    if (flag == NO_QUOTE){
+        return QUOTED_VALUE;
+    } else {
+        return NO_QUOTE;
+    }
+};
 
 static int csv_parser_token_buffer_init(csv_parser_t* parser) {
     if (!parser || !parser->line_buffer || parser->line_buffer_size == 0) {
@@ -64,11 +72,7 @@ static int csv_parser_token_buffer_init(csv_parser_t* parser) {
                     i += 1;
                     break;
                 default:
-                    if (quoteFlag == NO_QUOTE) {
-                        quoteFlag = QUOTED_VALUE;
-                    } else {
-                        quoteFlag = NO_QUOTE;
-                    }
+                    quoteFlag = csv_parser_eval_quote_flag(quoteFlag);
                     break;
             }
         } else if (parser->line_buffer[i] == ',' && quoteFlag == NO_QUOTE) {
@@ -79,59 +83,88 @@ static int csv_parser_token_buffer_init(csv_parser_t* parser) {
 
     parser->column_count = token_count_new + 1;
 
-    parser->token_buffer = malloc(sizeof(char *) * (parser->column_count));
-    if (!parser->token_buffer) {
+    parser->token_pointers = malloc(sizeof(char *) * (parser->column_count));
+    if (!parser->token_pointers) {
         return -1;
     }
     for (size_t i = 0; i < parser->column_count; ++i) {
-        (parser->token_buffer)[i] = (char*) malloc(sizeof(char) * STANDARD_LINE_BUFFER_SIZE);
-        if (!(parser->token_buffer)[i]) {
-            return -1;
-        }
+        (parser->token_pointers)[i] = NULL;
     }
 
     return 0;
 }
 
-static int csv_parser_tokenize_and_trim_line(char* line, char delimiter, char** token, size_t* token_count){
-    QuoteFlag quoteFlag = NO_QUOTE;
 
-    for (int i = 0; i < strlen(line)-1; i++){
-        if (line[i] == '"'){
-            switch (line[i+1]) {
+
+static int csv_parser_tokenize_and_trim_line(csv_parser_t* parser){
+    QuoteFlag quoteFlag = NO_QUOTE;
+    size_t line_length = strlen(parser->line_buffer);
+
+    for (int i = 0; i < line_length-1; i++){
+        if (parser->line_buffer[i] == '"'){
+            switch (parser->line_buffer[i+1]) {
                 case '"':
                     quoteFlag = QUOTED_VALUE;
-                    line[i] = '\a';
+                    parser->line_buffer[i] = '\a';
                     i += 1;
                     break;
+                default:
+                    quoteFlag = csv_parser_eval_quote_flag(quoteFlag);
+                    break;
             }
+        }
+        else if (parser->line_buffer[i] == ',' && quoteFlag == NO_QUOTE){
+            parser->line_buffer[i] = '\0';
+        } else if (parser->line_buffer[i] == ' ' && quoteFlag == NO_QUOTE){
+            parser->line_buffer[i] = '\a';
+        }
+    }
+
+    // In place tokenization logic. The line_buffer is used as a buffer for the tokenized line to
+    // be prepared for further processing in the callback functions. The token pointers are made to
+    // point at the beginning of each token in the line_buffer. The '\0' characters are used as delimiters here.
+    // The complete line gets processed in one pass. Complexity is O(n) with n being the length of the line.
+
+    size_t token_index = 0;
+    size_t char_pos = 0;
+    parser->token_pointers[token_index] = parser->line_buffer;
+
+    for (int i = 0; i < line_length; ++i) {
+        switch(parser->line_buffer[i]){
+            case '\a':
+                break;
+            case '\0':
+                if(token_index >= parser->column_count - 1) {
+                    parser->line_buffer[char_pos] = '\0';
+                    break;
+                }
+                token_index += 1;
+                parser->token_pointers[token_index] = &parser->line_buffer[i+1];
+                char_pos++;
+                break;
+            default:
+                parser->line_buffer[char_pos] = parser->line_buffer[i];
+                char_pos++;
         }
     }
 };
 
-int read_csv(const char* file_path, csv_parser_t* parser, csv_callback_t callback){
+int csv_parser_parse(const char* file_path, csv_parser_t* parser, csv_callback_t callback){
 
-    if (file_path == NULL || parser == NULL || callback.csv_callback == NULL){
+    if (file_path == NULL || parser == NULL || callback.csv_callback_data == NULL){
         return -1;
     }
     FILE* file = fopen(file_path, "r");
-
     if(!file) {
         return -1;
     }
 
-    if (parser->has_header){
-        if (getline(&line_buffer, &buffer_size, file) == -1){
-            return -1;
-        }
+    if (getline(&(parser->line_buffer), &(parser->line_buffer_size), file) == -1){
+        return -1;
     }
+    csv_parser_token_buffer_init(parser);
+    csv_parser_tokenize_and_trim_line(parser);
 
 
-
-
-
-
-
-    free(line_buffer);
     return 0;
 }
