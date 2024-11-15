@@ -10,6 +10,7 @@ void dataset_t_init(dataset_t* dataset, size_t x_dimensions){
     dataset -> data_points_count = 0;
     dataset -> x_dimensions = x_dimensions;
     dataset -> data_pool = malloc(sizeof(double) * INITIAL_CAPACITY * (x_dimensions + 1));
+    dataset -> token_transformation_buffer = NULL;
 
     if(dataset -> data_points == NULL || dataset -> data_pool == NULL){
         fprintf(stderr, "Error: Initial memory allocation failed\n");
@@ -24,7 +25,51 @@ void dataset_t_init(dataset_t* dataset, size_t x_dimensions){
 void dataset_t_destroy(dataset_t* dataset) {
     free(dataset -> data_points);
     free(dataset -> data_pool);
+    if(dataset -> token_transformation_buffer){
+        free(dataset -> token_transformation_buffer);
+    }
 }
+
+
+bool data_handler(const char* tokenized_line,size_t token_count, void* context) {
+    dataset_t *dataset = (dataset_t *) context;
+
+    // Since the data_handler is the only function to use the token transformation buffer it will be lazily
+    // allocated here. The buffer is used to store the transformed tokens for a quick validation of the line content
+    // before pushing the data to the dataset. The buffer is freed when the dataset is destroyed but serves as a intermediate
+    // storage for the data_handler callback and is reused for each line. This way i avoid frequent memory allocations
+    // and deallocations but still have a clean interface for the data_handler callback.
+
+    if (dataset->token_transformation_buffer == NULL) {
+        dataset->token_transformation_buffer = malloc(sizeof(double) * token_count);
+    }
+
+    dataset->x_dimensions = token_count - 1;
+
+    size_t processed_token = 0;
+    char *token = (char *) tokenized_line;
+    char *token_end;
+
+    for (int i = 0; i < token_count; ++i) {
+        double token_value = strtod(token, &token_end);
+        if (token_end == token) {
+            fprintf(stderr, "Error: Conversion of token to double failed\n");
+            return false;
+        }
+        dataset->token_transformation_buffer[i] = token_value;
+        processed_token++;
+    }
+
+    if (processed_token != token_count) {
+        fprintf(stderr, "Error in data handler callback: Token count does not match x dimensions\n");
+        return false;
+    }
+
+
+
+    return true;
+}
+
 
 // Function to initialize a dataset from a CSV file. The function reads the file line by line.
 // The first line gets evaluated to determine the number of dimensions of the x values, so
@@ -42,13 +87,10 @@ bool dataset_t_init_from_csv(dataset_t* dataset, const char* file_path){
     size_t x_dimensions = 0;
     size_t data_points_count = 0;
 
-
-
     free(read_buffer);
 
     return true;
 }
-
 
 void dataset_t_push_data_point(dataset_t* dataset, double* x, size_t x_dimensions, double y) {
     if (x_dimensions != dataset -> x_dimensions) {

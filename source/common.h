@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "csv.h"
 
 #define GROWTH_FACTOR 2
 #define GROWTH_THRESHOLD 1<<20
@@ -21,7 +22,6 @@
 
 typedef struct {
     double* x;
-    double* y;
 } data_point_t;
 
 // Enum for the different parsing modes of the CSV file.
@@ -44,7 +44,9 @@ typedef struct {
     size_t data_points_capacity;
     size_t data_points_count;
     size_t x_dimensions;
+    size_t y_index;
     const char** column_names;
+    double* token_transformation_buffer;
     double* data_pool;
 } dataset_t;
 

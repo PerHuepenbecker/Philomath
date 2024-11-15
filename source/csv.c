@@ -8,6 +8,8 @@
 #include <stdlib.h>
 
 
+
+
 int csv_parser_t_init_std(csv_parser_t* parser){
     if (!parser){
         return -1;
@@ -131,7 +133,7 @@ static int csv_parser_tokenize_and_trim_line(csv_parser_t* parser){
     // In place tokenization logic. The line_buffer is used as a buffer for the tokenized line to
     // be prepared for further processing in the callback functions. The token pointers are made to
     // point at the beginning of each token in the line_buffer. The '\0' characters are used as delimiters here.
-    // The complete line gets processed in one pass. Complexity is O(n) with n being the length of the line.
+    // The complete line gets processed in one pass.
 
     size_t token_index = 0;
     size_t char_pos = 0;
@@ -142,7 +144,9 @@ static int csv_parser_tokenize_and_trim_line(csv_parser_t* parser){
             case '\a':
                 break;
             case '\0':
-
+                if(token_index >= parser->column_count){
+                    break;
+                }
                 token_index += 1;
                 parser->line_buffer[char_pos] = '\0';
                 parser->token_pointers[token_index] = &parser->line_buffer[char_pos+1];
