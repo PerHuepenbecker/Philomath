@@ -44,6 +44,7 @@ typedef struct {
     size_t data_points_capacity;
     size_t data_points_count;
     size_t x_dimensions;
+    const char** column_names;
     double* data_pool;
 } dataset_t;
 
@@ -51,7 +52,7 @@ bool dataset_t_init_from_csv(dataset_t* dataset, const char* file_path);
 
 void dataset_t_init(dataset_t* dataset, size_t x_dimensions);
 
-void dataset_push_data_point(dataset_t* dataset, double* x, size_t x_dimensions, double y);
+void dataset_t_push_data_point(dataset_t* dataset, double* x, size_t x_dimensions, double y);
 
 void dataset_destroy(dataset_t* dataset);
 

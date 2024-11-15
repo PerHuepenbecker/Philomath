@@ -4,9 +4,6 @@
 
 #include "common.h"
 
-
-
-
 void dataset_t_init(dataset_t* dataset, size_t x_dimensions){
     dataset -> data_points = malloc(sizeof(data_point_t) * INITIAL_CAPACITY);
     dataset -> data_points_capacity = INITIAL_CAPACITY;
@@ -24,65 +21,9 @@ void dataset_t_init(dataset_t* dataset, size_t x_dimensions){
 // allocation into play. This way we can safely free all memory with a single call to free for each
 // dynamic array.
 
-void dataset_destroy(dataset_t* dataset) {
+void dataset_t_destroy(dataset_t* dataset) {
     free(dataset -> data_points);
     free(dataset -> data_pool);
-}
-
-static bool parse_csv_line(const char* line, enum ParseMode mode, size_t* x_dimensions, double* value_pool, ) {
-    switch (mode) {
-        case READ_X_DIMENSIONS: {
-            char *token = strtok(line, ",");
-            size_t count = 0;
-            while (token != NULL) {
-                count++;
-                token = strtok(NULL, ",");
-            }
-            *x_dimensions = count;
-
-        }
-            break;
-        case READ_DATA_POINTS:
-            break;
-        default:
-            fprintf(stderr, "Error: Invalid parse mode\n");
-            return false;
-    }
-};
-
-static bool read_csv_file(dataset_t* dataset, const char* file_path){
-    FILE* file = fopen(file_path, "r");
-
-    if (!file){
-        fprintf(stderr, "Error: Could not open file\n");
-        return false;
-    }
-
-    char* line_buffer = malloc(sizeof(char) * STANDARD_BUFFER_SIZE);
-    if (!line_buffer){
-        fprintf(stderr, "Error: Memory allocation for buffer failed\n");
-        return false;
-    }
-    // reading the first line to determine the number of dimensions as well as the names
-    // of the following columns
-    size_t line_length = 0;
-    size_t buffer_size = STANDARD_BUFFER_SIZE;
-
-    // Check input from first line of the csv file + necsessary cleanup on error
-
-    if((line_length = getline(&line_buffer, &buffer_size, file)) == -1) {
-        fprintf(stderr, "Error: Could not read first line - check file!\n");
-        free(line_buffer);
-        fclose(file);
-        return false;
-    }
-
-    if (getline(&line_buffer, &buffer_size, file) == -1){
-        fprintf(stderr, "Error: Could not read first line\n");
-        return NULL;
-    }
-
-    return NULL;
 }
 
 // Function to initialize a dataset from a CSV file. The function reads the file line by line.
@@ -90,7 +31,7 @@ static bool read_csv_file(dataset_t* dataset, const char* file_path){
 // it relies on proper CSV formatting. The function then reads the remaining lines and stores
 // the data in the dataset struct. The function returns true if the initialization was successful.
 
-bool dataset_init_from_csv(dataset_t* dataset, const char* file_path){
+bool dataset_t_init_from_csv(dataset_t* dataset, const char* file_path){
 
     char* read_buffer = malloc(sizeof(char) * 1024);
     if (!read_buffer){
@@ -109,7 +50,7 @@ bool dataset_init_from_csv(dataset_t* dataset, const char* file_path){
 }
 
 
-void dataset_push_data_point(dataset_t* dataset, double* x, size_t x_dimensions, double y) {
+void dataset_t_push_data_point(dataset_t* dataset, double* x, size_t x_dimensions, double y) {
     if (x_dimensions != dataset -> x_dimensions) {
         fprintf(stderr, "Error: Dimensions of x do not match dataset dimensions\n");
         return;
