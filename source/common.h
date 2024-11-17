@@ -21,7 +21,7 @@
 // allow for separate caching of the values.
 
 typedef struct {
-    double* x;
+    double* line;
 } data_point_t;
 
 // Enum for the different parsing modes of the CSV file.
@@ -43,9 +43,8 @@ typedef struct {
     data_point_t* data_points;
     size_t data_points_capacity;
     size_t data_points_count;
-    size_t x_dimensions;
-    size_t y_index;
-    const char** column_names;
+    size_t dimensions;
+    char** column_names;
     double* token_transformation_buffer;
     double* data_pool;
 } dataset_t;
@@ -54,13 +53,12 @@ bool dataset_t_init_from_csv(dataset_t* dataset, const char* file_path);
 
 void dataset_t_init(dataset_t* dataset, size_t x_dimensions);
 
-void dataset_t_push_data_point(dataset_t* dataset, double* x, size_t x_dimensions, double y);
+bool data_handler(const char* tokenized_line,size_t token_count, void* context);
 
-void dataset_destroy(dataset_t* dataset);
+void dataset_t_inspect(dataset_t* dataset, size_t number_of_data_points);
 
+void dataset_t_push_data_point(dataset_t* dataset, const double* data, size_t dimensions);
 
-
-
-
+void dataset_t_destroy(dataset_t* dataset);
 
 #endif //LINEARREGRESSION_C_COMMON_H

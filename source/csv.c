@@ -7,9 +7,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
-
-
 int csv_parser_t_init_std(csv_parser_t* parser){
     if (!parser){
         return -1;
@@ -73,7 +70,7 @@ static int csv_parser_token_buffer_init(csv_parser_t* parser) {
     // Decided for this approach instead of a helper function for keeping the logic local to the
     // function and to avoid complex functions with many parameters.
 
-    for (int i = 0; i < strlen(parser->line_buffer) - 1; ++i) {
+    for (int i = 0; i < strlen(parser->line_buffer); ++i) {
         if (parser->line_buffer[i] == '"') {
             switch (parser->line_buffer[i + 1]) {
                 case '"':
@@ -159,6 +156,8 @@ static int csv_parser_tokenize_and_trim_line(csv_parser_t* parser){
         }
     }
     parser->line_buffer[char_pos] = '\0';
+
+    return 0;
 };
 
 int csv_parser_parse(const char* file_path, csv_parser_t* parser, csv_callback_t callback){
@@ -177,6 +176,29 @@ int csv_parser_parse(const char* file_path, csv_parser_t* parser, csv_callback_t
     csv_parser_token_buffer_init(parser);
     csv_parser_tokenize_and_trim_line(parser);
 
+    if (parser->has_header){
+       parser->column_names = malloc(sizeof(char*) * parser->column_count);
+         if (!parser->column_names){
+              return -1;
+         }
+
+         for (size_t i = 0; i < parser->column_count; i++){
+                parser->column_names[i] = malloc(sizeof(char) * strlen(parser->token_pointers[i]));
+                if (!parser->column_names[i]){
+                    return -1;
+                }
+                strcpy(parser->column_names[i], parser->token_pointers[i]);
+            }
+    }
+
+    while (getline(&(parser->line_buffer), &(parser->line_buffer_size), file) != -1){
+        csv_parser_tokenize_and_trim_line(parser);
+        callback.csv_callback_data(parser->line_buffer, parser->column_count, callback.context);
+    }
+
+    printf("Calling handler!\n");
+
+    fclose(file);
 
     return 0;
 }

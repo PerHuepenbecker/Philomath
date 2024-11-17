@@ -21,8 +21,8 @@
 // The callback functions are called for each line of the csv file.
 
 typedef struct {
-    bool (*csv_callback_data)(const char* line, void* context);
-    bool (*csv_callback_header)(const char* line, void* context);
+    bool (*csv_callback_data)(const char* line,size_t token_count, void* context);
+    //bool (*csv_callback_header)(const char* line,size_t token_count, void* context);
     void* context;
 } csv_callback_t;
 
