@@ -31,6 +31,8 @@ void preprocessor_t_destroy(preprocessor_t* preprocessor){
     free(preprocessor->column_stds);
 }
 
+// Function to fit the preprocessor to the dataset. The function calculates the mean and standard deviation for each column
+
 bool preprocessor_t_fit(preprocessor_t* preprocessor, dataset_t* dataset){
 
     if(preprocessor->dimensions != dataset->dimensions){
@@ -52,8 +54,14 @@ bool preprocessor_t_fit(preprocessor_t* preprocessor, dataset_t* dataset){
         preprocessor->column_stds[i] = sqrt(sum_sq/ dataset->data_points_count - mean * mean);
     }
 
+    preprocessor->state = DATASET_FITTED;
+
     return true;
 }
+
+// Function to standardize the features of the dataset. The function takes a initialized preprocessor and a dataset as
+// input and modifies the dataset in place. The function standardizes the features of the dataset by performing the
+// z-score normalization.
 
 void preprocessor_t_transform(preprocessor_t* preprocessor, dataset_t* dataset){
     if(preprocessor->dimensions != dataset->dimensions){
@@ -78,15 +86,40 @@ void preprocessor_t_transform(preprocessor_t* preprocessor, dataset_t* dataset){
             }
         }
     }
+
+    preprocessor->state = (preprocessor->standardize_target && preprocessor->standardize_features) ? DATASET_STANDARDIZED : FEATURES_STANDARDIZED;
 }
+
+// Helper function to fit and transform the dataset in one step
 
 void preprocessor_t_fit_and_transform (preprocessor_t* preprocessor, dataset_t* dataset){
     preprocessor_t_fit(preprocessor, dataset);
     preprocessor_t_transform(preprocessor, dataset);
 }
 
+// Getter method for the column means - necessary for the linear regression model to make predictions based on the
+// standardized data set.
 
-void preprocessor_t_unnormalize(preprocessor_t* preprocessor, double* value){
+void preprocessor_t_get_column_means(preprocessor_t* preprocessor, double* buffer){
+    if (preprocessor->state == DATASET_FITTED){
+        memcpy(buffer, preprocessor->column_means, preprocessor->dimensions * sizeof(double));
+        return;
+    }
+    fprintf(stderr, "Error: Dataset currently not fitted!\n");
+}
+
+// Getter method for the column standard deviations - necessary for the linear regression model to make predictions based on the
+// standardized data set.
+
+void preprocessor_t_get_column_stds(preprocessor_t* preprocessor, double* buffer){
+    if(preprocessor->state == DATASET_FITTED){
+        memcpy(buffer, preprocessor->column_stds, preprocessor->dimensions * sizeof(double));
+        return;
+    }
+    fprintf(stderr, "Error: Dataset currently not fitted!\n");
+}
+
+void preprocessor_t_unnormalize(preprocessor_t* preprocessor, dataset_t* dataset){
     if(preprocessor->state != DATASET_STANDARDIZED){
         fprintf(stderr, "Error: Dataset currently not standardized!\n");
         return;
@@ -99,7 +132,9 @@ void preprocessor_t_unnormalize(preprocessor_t* preprocessor, double* value){
             double mean = preprocessor->column_means[i];
             double std = preprocessor->column_stds[i];
 
-            *value = (*value * std) + mean;
+            for (size_t j = 0; j < dataset->data_points_count; ++j) {
+                dataset->data_points[j].line[i] = dataset->data_points[j].line[i] * std + mean;
+            }
         }
     }
 
