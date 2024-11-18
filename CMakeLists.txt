@@ -11,4 +11,6 @@ add_executable(SimpleLinearRegression
         source/linreg.c
         source/csv.h
         source/csv.c
-        source/result.h)
+        source/result.h
+        source/preprocessor.c
+        source/preprocessor.h)
