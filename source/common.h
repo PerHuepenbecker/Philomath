@@ -32,6 +32,8 @@ enum ParseMode {
     READ_COLUMN_NAMES
 };
 
+typedef void* CTX;
+
 // Data structure for handling the dataset consisting of DataPoints + Owner of all allocated
 // memory for the DataPoints.
 // Complete x and y data is stored in the data_pool array. The DataPoints only store pointers to
@@ -49,16 +51,18 @@ typedef struct {
     double* data_pool;
 } dataset_t;
 
-bool dataset_t_init_from_csv(dataset_t* dataset, const char* file_path);
+bool dataset_t_init_from_csv(dataset_t*, const char*);
 
-void dataset_t_init(dataset_t* dataset, size_t x_dimensions);
+void dataset_t_init(dataset_t*, size_t);
 
-bool data_handler(const char* tokenized_line,size_t token_count, void* context);
+bool data_handler(const char*,size_t, CTX);
 
-void dataset_t_inspect(dataset_t* dataset, size_t number_of_data_points);
+void dataset_t_inspect(dataset_t*, size_t);
 
-void dataset_t_push_data_point(dataset_t* dataset, const double* data, size_t dimensions);
+void dataset_t_push_data_point(dataset_t*, const double*, size_t);
 
-void dataset_t_destroy(dataset_t* dataset);
+void dataset_t_destroy(dataset_t*);
+
+void dataset_t_standardize(dataset_t*);
 
 #endif //LINEARREGRESSION_C_COMMON_H

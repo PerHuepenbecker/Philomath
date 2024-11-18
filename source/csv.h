@@ -59,10 +59,9 @@ typedef enum{
 
 } QuoteFlag;
 
-int csv_parser_t_init_std(csv_parser_t* parser);
-int csv_parser_t_destroy(csv_parser_t* parser);
-void csv_parser_t_set_debug_info(csv_parser_t* parser, bool debug_info);
+int csv_parser_t_init_std(csv_parser_t*);
+int csv_parser_t_destroy(csv_parser_t*);
 
-int csv_parser_parse(const char* file_path, csv_parser_t* parser, csv_callback_t callback);
+int csv_parser_parse(const char*, csv_parser_t*, csv_callback_t);
 
 #endif //SIMPLELINEARREGRESSION_CSV_H
