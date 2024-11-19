@@ -6,11 +6,8 @@
 #include "math.h"
 
 // Initializer for the preprocessor
-void preprocessor_t_init(preprocessor_t* preprocessor, size_t y_index, size_t dimensions, bool standardize_features, bool standardize_target){
-    preprocessor->y_index = y_index;
+void preprocessor_t_init(preprocessor_t* preprocessor, size_t dimensions){
     preprocessor->dimensions = dimensions;
-    preprocessor->standardize_features = standardize_features;
-    preprocessor->standardize_target = standardize_target;
     preprocessor->column_means = calloc(dimensions, sizeof(double));
     preprocessor->state = NO_STANDARDIZATION;
     if (preprocessor->column_means == NULL) {
@@ -75,8 +72,6 @@ void preprocessor_t_transform(preprocessor_t* preprocessor, dataset_t* dataset){
     }
 
     for(size_t i = 0; i<preprocessor->dimensions; i++){
-        if( (i != preprocessor->y_index && preprocessor->standardize_features) ||
-            (i == preprocessor->y_index && preprocessor->standardize_target)){
 
             double mean = preprocessor->column_means[i];
             double std = preprocessor->column_stds[i];
@@ -85,9 +80,8 @@ void preprocessor_t_transform(preprocessor_t* preprocessor, dataset_t* dataset){
                 dataset->data_points[j].line[i] = (dataset->data_points[j].line[i] - mean) / std;
             }
         }
-    }
 
-    preprocessor->state = (preprocessor->standardize_target && preprocessor->standardize_features) ? DATASET_STANDARDIZED : FEATURES_STANDARDIZED;
+    preprocessor->state = DATASET_STANDARDIZED;
 }
 
 // Helper function to fit and transform the dataset in one step
@@ -126,8 +120,6 @@ void preprocessor_t_unnormalize(preprocessor_t* preprocessor, dataset_t* dataset
     }
 
     for(size_t i = 0; i<preprocessor->dimensions; i++){
-        if( (i != preprocessor->y_index && preprocessor->standardize_features) ||
-            (i == preprocessor->y_index && preprocessor->standardize_target)){
 
             double mean = preprocessor->column_means[i];
             double std = preprocessor->column_stds[i];
@@ -136,7 +128,6 @@ void preprocessor_t_unnormalize(preprocessor_t* preprocessor, dataset_t* dataset
                 dataset->data_points[j].line[i] = dataset->data_points[j].line[i] * std + mean;
             }
         }
-    }
 
 }
 

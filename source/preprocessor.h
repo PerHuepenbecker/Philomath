@@ -15,7 +15,6 @@ typedef enum {
 } preprocessor_state_t;
 
 typedef struct {
-    size_t y_index;
     size_t dimensions;
     double* column_means;
     double* column_stds;
@@ -24,7 +23,7 @@ typedef struct {
     preprocessor_state_t state;
 } preprocessor_t;
 
-void preprocessor_t_init(preprocessor_t*, size_t, size_t, bool, bool);
+void preprocessor_t_init(preprocessor_t*, size_t);
 void preprocessor_t_destroy(preprocessor_t*);
 
 bool preprocessor_t_fit(preprocessor_t*, dataset_t*);
