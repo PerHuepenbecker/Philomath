@@ -12,6 +12,7 @@ void linear_regression_t_init(linear_regression_t* linreg, size_t dimensions, si
     linreg->column_means = calloc(dimensions, sizeof(double));
     linreg->column_stds = calloc(dimensions, sizeof(double));
     linreg->data_state = UNKNOWN;
+    linreg->regr_state = UNTRAINED;
     linreg->y_mean = 0.0;
     linreg->y_std = 0.0;
     linreg->dimensions = dimensions;
@@ -43,10 +44,23 @@ void linear_regression_t_destroy(linear_regression_t* linreg){
     }
 }
 
-static void x_indices_helper(size_t* indices, size_t index_y){
+// Static helper function to unnormalize the theta values in case of normalization so that the resulting bias and weight
+// are easily interpretable. Currently implemented as a standard feature since I don't see a use in the normalized values for
+// interpretation and prediction
 
+void unnormalize_theta_values(linear_regression_t* linreg, size_t index_y){
+    size_t weight_index = 0;
+    double bias_portion_x = 0.0;
+    for (size_t i = 0; i < linreg->dimensions; ++i) {
+        if (i != index_y){
+            linreg->weights[weight_index] *= linreg->column_stds[index_y] / linreg->column_stds[i];
+            bias_portion_x += linreg->weights[weight_index] * linreg->column_means[i];
+            weight_index++;
+        }
+    }
+
+    linreg->bias = linreg->column_means[index_y] - bias_portion_x;
 }
-
 
 void linear_regression_t_fit(linear_regression_t* linreg, dataset_t* dataset, size_t index_y){
     // Check if a valid y_index is being supplied to the linear regression mode
@@ -122,9 +136,13 @@ void linear_regression_t_fit(linear_regression_t* linreg, dataset_t* dataset, si
 
         current_mse /= dataset->data_points_count;
 
-        if (last_mse-current_mse < 0.000001) {
+        if (last_mse-current_mse == 0.0) {
+            printf("Exiting because of ideal fit with mse: %f from %f!\n",current_mse, last_mse);
+            printf("Optimized for %zu epochs\n", current_epoch);
             break;
         }
+
+        last_mse = current_mse;
 
         double mse_bias = sum_errors *= scale_factor;
         linreg->bias -= linreg->learning_rate*mse_bias;
@@ -137,6 +155,54 @@ void linear_regression_t_fit(linear_regression_t* linreg, dataset_t* dataset, si
         current_epoch++;
     }
 
+    printf("[REGRESSION] Finished training!\n");
+
+    linreg->regr_state = TRAINED;
+
     free(x_indices);
     free(sum_weighted_errors);
+}
+
+linear_predictor_t* linear_regression_t_export_predictor(linear_regression_t* regression, size_t index_y){
+    if (regression->regr_state != TRAINED){
+        fprintf(stderr,"Invalid regression model state - model not trained!\n");
+    }
+    if (regression->data_state == DATASET_STANDARDIZED){
+
+
+
+    }
+    {
+        linear_predictor_t* predictor = malloc(sizeof(linear_predictor_t));
+        if(!predictor){
+            fprintf(stderr, "Allocation error for linear predictor struct!\n");
+            return NULL;
+        }
+
+        predictor->bias = regression->bias;
+        predictor->dimensions = regression->dimensions;
+        predictor->weights = malloc(regression->dimensions * sizeof(double));
+        for (int i = 0; i < regression->dimensions; ++i) {
+            predictor->weights[i] = regression->weights[i];
+        }
+    }
+}
+
+void linear_regression_t_predict(linear_regression_t* linreg, double* x_value, double*y){
+    if (x_value == NULL || y == NULL || linreg == NULL || linreg->regr_state == UNTRAINED){
+        fprintf(stderr, "Invalid arguments for prediction\n");
+        return;
+    }
+
+    double prediction = 0.0;
+
+    for (int i = 0; i < linreg->dimensions-1; ++i) {
+        prediction += linreg->weights[i] * x_value[i];
+    }
+    prediction += linreg->bias;
+    *y = prediction;
+}
+
+void linear_predictor_t_destroy(linear_predictor_t* predictor){
+    free(predictor->weights);
 }
