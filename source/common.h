@@ -65,4 +65,5 @@ void dataset_t_destroy(dataset_t*);
 
 void dataset_t_standardize(dataset_t*);
 
+
 #endif //LINEARREGRESSION_C_COMMON_H

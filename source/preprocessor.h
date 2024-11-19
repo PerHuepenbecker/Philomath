@@ -9,10 +9,10 @@
 
 typedef enum {
     DATASET_FITTED,
-    FEATURES_STANDARDIZED,
     DATASET_STANDARDIZED,
-    NO_STANDARDIZATION
-} preprocessor_state_t;
+    NO_STANDARDIZATION,
+    UNKNOWN
+} data_state_t;
 
 typedef struct {
     size_t dimensions;
@@ -20,7 +20,7 @@ typedef struct {
     double* column_stds;
     bool standardize_features;
     bool standardize_target;
-    preprocessor_state_t state;
+    data_state_t state;
 } preprocessor_t;
 
 void preprocessor_t_init(preprocessor_t*, size_t);
