@@ -43,10 +43,12 @@ void linear_regression_t_destroy(linear_regression_t* linreg){
     }
 }
 
+static void x_indices_helper(size_t* indices, size_t index_y){
+
+}
 
 
 void linear_regression_t_fit(linear_regression_t* linreg, dataset_t* dataset, size_t index_y){
-
     // Check if a valid y_index is being supplied to the linear regression mode
 
     if(index_y >= dataset->dimensions){
@@ -54,8 +56,7 @@ void linear_regression_t_fit(linear_regression_t* linreg, dataset_t* dataset, si
         exit(1);
     }
 
-    // Determination of x indices in the supplied dataset based of the supplied y_index. Used for easy
-    // and readable access
+    // Determination of x indices in the supplied dataset based of the supplied y_index.
 
     size_t* x_indices = (size_t*) malloc(sizeof(size_t) * linreg->dimensions-1);
     if(!x_indices){
@@ -88,7 +89,10 @@ void linear_regression_t_fit(linear_regression_t* linreg, dataset_t* dataset, si
     // will definitely be added in the future
 
     size_t current_epoch = 0;
-    double last_mse = 100.0;
+
+    double last_mse = INITIAL_MSE;
+    double scale_factor = -2.0 / dataset->data_points_count;
+
     while(current_epoch < linreg->epochs) {
 
         double current_mse = 0.0;
@@ -104,15 +108,15 @@ void linear_regression_t_fit(linear_regression_t* linreg, dataset_t* dataset, si
                 portion_weighted_x += linreg->weights[j]*current_x_value;
             }
 
-            double prediction = linreg->bias += portion_weighted_x;
-            double error = dataset->data_points->line[index_y] - prediction;
+            double prediction = linreg->bias + portion_weighted_x;
+            double error = dataset->data_points[i].line[index_y] - prediction;
 
             current_mse += (error*error);
 
             sum_errors += error;
 
             for (size_t j = 0; j < linreg->dimensions-1; ++j) {
-                sum_weighted_errors[j] = error * dataset->data_points[i].line[x_indices[j]];
+                sum_weighted_errors[j] += error * dataset->data_points[i].line[x_indices[j]];
             }
         }
 
@@ -122,14 +126,17 @@ void linear_regression_t_fit(linear_regression_t* linreg, dataset_t* dataset, si
             break;
         }
 
-        double mse_bias = sum_errors *= (-2.0/dataset->data_points_count);
+        double mse_bias = sum_errors *= scale_factor;
         linreg->bias -= linreg->learning_rate*mse_bias;
 
         for (int i = 0; i < linreg->dimensions-1; ++i) {
-            double mse_weight = sum_weighted_errors[i] *= (-2.0/dataset->data_points_count);
+            double mse_weight = sum_weighted_errors[i] *= scale_factor;
             linreg -> weights[i] -= linreg->learning_rate*mse_weight;
         }
 
         current_epoch++;
     }
+
+    free(x_indices);
+    free(sum_weighted_errors);
 }

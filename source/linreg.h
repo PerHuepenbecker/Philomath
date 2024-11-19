@@ -5,6 +5,8 @@
 #ifndef LINEARREGRESSION_C_LINREG_H
 #define LINEARREGRESSION_C_LINREG_H
 
+#define INITIAL_MSE 1.0
+
 #include <stddef.h>
 #include <stdbool.h>
 #include "preprocessor.h"
