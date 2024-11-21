@@ -30,11 +30,15 @@
 // Enum of generic error codes - specific error information has to be handled in the message or in a polymorphic
 // extension of the base error struct
 
+#include <stdlib.h>
+#include <string.h>
+
 typedef enum{
     FILE_ERROR,
     FILE_NOT_FOUND_ERROR,
     FILE_PARSING_ERROR,
     STRUCT_INITIALIZATION_ERROR,
+    INVALID_FUNCTION_ARGUMENT,
     MEMORY_ALLOCATION_ERROR,
     INDEX_OUT_OF_BOUNDS_ERROR
 } ErrorCode;
@@ -67,12 +71,24 @@ Result Err(Error *error) {
     return res;
 }
 
+Error* create_error(ErrorCode code, const char* message){
+    Error* e = malloc(sizeof(Error));
+    if (!e){
+        fprintf(stderr, "[Critical error]\tError allocation failed. Exiting...\n");
+        exit(1);
+    }
+    e->code = code;
+    e->message = malloc(sizeof(char) * strlen(message) + 1);
+    strncpy(e->message, message, strlen(message));
+    return e;
+}
+
 bool is_ok(Result result){
     return result.is_ok;
 }
 
 Error* get_error(Result result){
-    Error* err = (result.is_ok) ? NULL : result.data;
+    Error* err = (result.is_ok) ? NULL : (Error*) result.data;
     return err;
 }
 
