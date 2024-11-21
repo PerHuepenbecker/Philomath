@@ -2,7 +2,7 @@
 // Created by Per Hüpenbecker on 10.11.24.
 //
 
-#include "common.h"
+#include "dataset.h"
 
 void dataset_t_init(dataset_t* dataset, size_t dimensions){
     dataset -> data_points = malloc(sizeof(data_point_t) * INITIAL_CAPACITY);
