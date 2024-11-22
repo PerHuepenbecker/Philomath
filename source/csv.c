@@ -98,6 +98,10 @@ static Result csv_parser_tokenize_and_trim_line(csv_parser_t* parser){
     QuoteFlag quoteFlag = NO_QUOTE;
     size_t line_length = strlen(parser->line_buffer);
 
+    for (size_t i = 0; i < parser->column_count; ++i) {
+        parser->token_pointers[i] = NULL;
+    }
+
 
     // Logic for marking the values in the read line for deletion. Every line gets processed twice - first here for
     // marking with \0 and \a, where \0 divides the identified tokens and \a marks the chars for deletion in the following
@@ -108,7 +112,7 @@ static Result csv_parser_tokenize_and_trim_line(csv_parser_t* parser){
             parser->line_buffer[i] = '\a';
             switch (parser->line_buffer[i+1]) {
                 case '"':
-                    quoteFlag = QUOTED_VALUE;
+                    quoteFlag = (quoteFlag == QUOTED_VALUE) ? NO_QUOTE : QUOTED_VALUE;
                     i += 1;
                     break;
                 default:
@@ -131,16 +135,9 @@ static Result csv_parser_tokenize_and_trim_line(csv_parser_t* parser){
     size_t token_index = 0;
     size_t char_pos = 0;
 
+    parser->token_pointers[token_index] =  parser->line_buffer;
 
-    size_t i = 0;
-
-    while (i < line_length && parser->line_buffer[i] == '\a'){
-        i++;
-    }
-
-    parser->token_pointers[token_index] = &parser->line_buffer[i];
-
-    for (int i = 0; i < line_length; ++i) {
+    for (size_t i = 0; i < line_length; ++i) {
         switch(parser->line_buffer[i]){
             case '\a':
                 break;
@@ -160,6 +157,7 @@ static Result csv_parser_tokenize_and_trim_line(csv_parser_t* parser){
         }
     }
     parser->line_buffer[char_pos] = '\0';
+
 
     return Ok(VOID);
 };
