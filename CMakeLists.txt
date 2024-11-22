@@ -1,10 +1,12 @@
 cmake_minimum_required(VERSION 3.27)
+
 project(SimpleLinearRegression C)
+
+include(ctest)
 
 set(CMAKE_C_STANDARD 11)
 
-add_executable(SimpleLinearRegression
-        example/main.c
+add_library(SimpleML
         source/linreg.h
         source/dataset.c
         source/dataset.h
@@ -15,3 +17,9 @@ add_executable(SimpleLinearRegression
         source/preprocessor.c
         source/preprocessor.h
         source/result.c)
+
+add_executable(SimpleLinearRegression
+        example/main.c)
+
+target_link_libraries(SimpleLinearRegression PRIVATE SimpleML)
+
