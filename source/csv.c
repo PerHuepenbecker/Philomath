@@ -210,7 +210,7 @@ Result csv_parser_parse(const char* file_path, csv_parser_t* parser, csv_callbac
 
     while (getline(&(parser->line_buffer), &(parser->line_buffer_size), file) != -1){
         csv_parser_tokenize_and_trim_line(parser);
-        callback.csv_callback_data(parser->line_buffer, parser->column_count, callback.context);
+        callback.csv_callback_data(parser->token_pointers, parser->column_count, callback.context);
     }
 
     fclose(file);

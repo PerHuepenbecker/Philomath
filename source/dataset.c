@@ -81,6 +81,40 @@ void dataset_t_destroy(dataset_t* dataset) {
         free(dataset -> token_transformation_buffer);
 }
 
+Result data_handler_token_pointer(char ** token_pointer, size_t token_count, void* context){
+    dataset_t* dataset = (dataset_t*) context;
+    size_t processed_token = 0;
+
+    if(dataset->token_transformation_buffer == NULL){
+        dataset->token_transformation_buffer = malloc(sizeof(double) * token_count);
+        if(dataset->token_transformation_buffer == NULL){
+            return Err(MEMORY_ALLOCATION_ERROR, "Allocation of token transformation buffer failed.", NULL);
+        }
+    }
+
+    dataset->dimensions = token_count;
+    char* token_end;
+
+    for (int i = 0; i < token_count; i++) {
+        double token_value = strtod(token_pointer[i], &token_end);
+        if (token_end == token_pointer[i]){
+            char token_buf[MAX_LOG_SIZE];
+            snprintf(token_buf, MAX_LOG_SIZE, "Token: %s", token_pointer[i]);
+            return Err(DATA_CONVERSION_ERROR, "Token could not be processed", token_buf);
+        }
+        dataset->token_transformation_buffer[i] = token_value;
+        processed_token++;
+    }
+
+    if (processed_token!=token_count){
+        return Err(DATA_CORRUPTION_ERROR, "Error in data handler callback: Token count does not match x dimensions", NULL);
+    }
+
+    dataset_t_push_data_point(dataset, dataset->token_transformation_buffer, token_count);
+
+    Ok(VOID);
+}
+
 Result data_handler(const char* tokenized_line,size_t token_count, void* context) {
     dataset_t *dataset = (dataset_t *) context;
 
@@ -141,7 +175,7 @@ Result dataset_t_init_from_csv(dataset_t* dataset, const char* file_path){
     csv_parser_t parser;
     csv_parser_t_init_std(&parser);
     csv_callback_t callback = {
-            .csv_callback_data = data_handler,
+            .csv_callback_data = data_handler_token_pointer,
             .context = dataset
     };
 

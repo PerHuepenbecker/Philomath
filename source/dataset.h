@@ -55,7 +55,11 @@ Result dataset_t_init_from_csv(dataset_t*, const char*);
 
 Result dataset_t_init(dataset_t*, size_t);
 
+// Possible refactoring option here since the data_handler is actually ml-method specific and not
+// dataset specific
 Result data_handler(const char*,size_t, CTX);
+
+Result data_handler_token_pointer(char** token_pointers, size_t token_count, CTX context);
 
 void dataset_t_inspect(dataset_t*, size_t);
 
