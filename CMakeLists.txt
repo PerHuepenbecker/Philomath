@@ -21,5 +21,12 @@ add_library(SimpleML
 add_executable(SimpleLinearRegression
         example/main.c)
 
-target_link_libraries(SimpleLinearRegression PRIVATE SimpleML)
+add_executable(Tests
+        tests/test_csv.c)
 
+target_link_libraries(SimpleLinearRegression PRIVATE SimpleML)
+target_link_libraries(Tests PRIVATE SimpleML)
+
+enable_testing()
+
+add_test(NAME test_csv COMMAND Tests)

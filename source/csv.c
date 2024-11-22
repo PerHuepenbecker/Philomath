@@ -118,7 +118,7 @@ static Result csv_parser_tokenize_and_trim_line(csv_parser_t* parser){
         }
         else if (parser->line_buffer[i] == ',' && quoteFlag == NO_QUOTE){
             parser->line_buffer[i] = '\0';
-        } else if (parser->line_buffer[i] == ' ' && quoteFlag == NO_QUOTE){
+        } else if ((parser->line_buffer[i] == ' ' || parser->line_buffer[i] == '\n') && quoteFlag == NO_QUOTE){
             parser->line_buffer[i] = '\a';
         }
     }
@@ -130,7 +130,15 @@ static Result csv_parser_tokenize_and_trim_line(csv_parser_t* parser){
 
     size_t token_index = 0;
     size_t char_pos = 0;
-    parser->token_pointers[token_index] = parser->line_buffer;
+
+
+    size_t i = 0;
+
+    while (i < line_length && parser->line_buffer[i] == '\a'){
+        i++;
+    }
+
+    parser->token_pointers[token_index] = &parser->line_buffer[i];
 
     for (int i = 0; i < line_length; ++i) {
         switch(parser->line_buffer[i]){
@@ -169,7 +177,7 @@ Result csv_parser_parse(const char* file_path, csv_parser_t* parser, csv_callbac
     }
 
     if (getline(&(parser->line_buffer), &(parser->line_buffer_size), file) == -1){
-        Err(FILE_PARSING_ERROR, "File appears to be empty.", file_path);
+        return Err(FILE_PARSING_ERROR, "File appears to be empty.", file_path);
     }
 
     tmp = csv_parser_token_buffer_init(parser);
@@ -189,12 +197,12 @@ Result csv_parser_parse(const char* file_path, csv_parser_t* parser, csv_callbac
 
 
          for (size_t i = 0; i < parser->column_count; i++){
-                parser->column_names[i] = malloc(sizeof(char) * strlen(parser->token_pointers[i]));
+                parser->column_names[i] = malloc(sizeof(char) * strlen(parser->token_pointers[i])+1);
                 if (!parser->column_names[i]){
                     for (i--;i!=0;i--){
                         free(parser->column_names[i]);
                     }
-                    Err(MEMORY_ALLOCATION_ERROR, "Column name sting could not be allocated", file_path);
+                    return Err(MEMORY_ALLOCATION_ERROR, "Column name sting could not be allocated", file_path);
                 }
                 strcpy(parser->column_names[i], parser->token_pointers[i]);
             }
