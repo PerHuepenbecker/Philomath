@@ -13,6 +13,7 @@
 
 #include <stdbool.h>
 #include <stdio.h>
+#include "result.h"
 
 // Definition of the csv_callback_t struct to store the csv callback functions.
 // The context attribute allows for passing additional data to the callback functions e.g.
@@ -59,9 +60,9 @@ typedef enum{
 
 } QuoteFlag;
 
-int csv_parser_t_init_std(csv_parser_t*);
-int csv_parser_t_destroy(csv_parser_t*);
+Result csv_parser_t_init_std(csv_parser_t*);
+Result csv_parser_t_destroy(csv_parser_t*);
 
-int csv_parser_parse(const char*, csv_parser_t*, csv_callback_t);
+Result csv_parser_parse(const char*, csv_parser_t*, csv_callback_t);
 
 #endif //SIMPLELINEARREGRESSION_CSV_H

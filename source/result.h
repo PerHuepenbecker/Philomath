@@ -5,33 +5,7 @@
 #ifndef SIMPLELINEARREGRESSION_RESULT_H
 #define SIMPLELINEARREGRESSION_RESULT_H
 
-/* Former Result handling approach via macro in the of Rust. I decided to go with another approach because
- * of the lacking flexibility and type safety by using this macro */
-
-// Definition of neccessary marcos for implementing a rust inspired Result type in C.
-// The Result type is a generic type that can either be an Ok or an Err type.
-//#define Result(type, error_type)    \
-                                    \
-    struct {                        \
-        int is_ok;                  \
-        union {                     \
-            type ok;                \
-            struct {                \
-                error_type err;     \
-                const char* msg;    \
-            } error_t;              \
-                                    \
-        };                          \
-    }
-
-//#define Ok(result_type, value) ((result_type){ .is_ok = 1, .ok = (value) })
-//#define Err(result_type, error, message) ((result_type){ .is_ok = 0, .error_t = {.err= (error), .msg = (message)}})
-
-// Enum of generic error codes - specific error information has to be handled in the message or in a polymorphic
-// extension of the base error struct
-
-#include <stdlib.h>
-#include <string.h>
+#include <stdbool.h>
 
 typedef enum{
     FILE_ERROR,
@@ -46,50 +20,31 @@ typedef enum{
 // I went here for a more object-oriented way and less usual C. Despite the overhead involved i wanted to ty to build
 // a modular and generic error handling approach that enforces proper validation of function return values.
 
+// Basic error struct. Allows handling of an error code and an error message
+
+typedef struct {
+    ErrorCode code;
+    const char* message;
+    const char* context;
+} Error;
+
+#define VOID NULL
+
 // Basic result type. The is_ok boolean determines if the Result is valid or not and can be used to shortcut
 // result processing if using with usually void returning functions.
 
 typedef struct {
     bool is_ok;
-    void* data;
+    union {
+        void* data;
+        Error error;
+    };
 } Result;
 
-// Basic error struct. Allows handling of an error code and an error message
+Result Err(ErrorCode code, const char* message, const char* context);
 
-typedef struct {
-    ErrorCode code;
-    char* message;
-} Error;
+Result Ok(void* data);
 
-Result Ok(void* data){
-    Result res = {true, data};
-    return res;
-}
-
-Result Err(Error *error) {
-    Result res = {false, error};
-    return res;
-}
-
-Error* create_error(ErrorCode code, const char* message){
-    Error* e = malloc(sizeof(Error));
-    if (!e){
-        fprintf(stderr, "[Critical error]\tError allocation failed. Exiting...\n");
-        exit(1);
-    }
-    e->code = code;
-    e->message = malloc(sizeof(char) * strlen(message) + 1);
-    strncpy(e->message, message, strlen(message));
-    return e;
-}
-
-bool is_ok(Result result){
-    return result.is_ok;
-}
-
-Error* get_error(Result result){
-    Error* err = (result.is_ok) ? NULL : (Error*) result.data;
-    return err;
-}
+Error get_error(Result result);
 
 #endif //SIMPLELINEARREGRESSION_RESULT_H

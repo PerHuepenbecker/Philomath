@@ -7,15 +7,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int csv_parser_t_init_std(csv_parser_t* parser){
-    if (!parser){
-        return -1;
-    }
+Result csv_parser_t_init_std(csv_parser_t* parser){
     parser->delimiter = STANDARD_DELIMITER;
     parser->has_header = STANDARD_HAS_HEADER;
     parser->line_buffer = malloc(sizeof(char) * STANDARD_LINE_BUFFER_SIZE);
     if (!parser->line_buffer){
-        return -1;
+        return Err(MEMORY_ALLOCATION_ERROR, "Allocation of line buffer failed.", NULL);
     }
     parser->token_pointers = NULL;
     parser->column_count = 0;
@@ -25,12 +22,12 @@ int csv_parser_t_init_std(csv_parser_t* parser){
     parser->column_names = NULL;
     parser->debug_info = false;
 
-    return 0;
+    return Ok(VOID);
 };
 
-int csv_parser_t_destroy(csv_parser_t* parser){
+Result csv_parser_t_destroy(csv_parser_t* parser){
     if(!parser){
-        return -1;
+        return Err(INVALID_FUNCTION_ARGUMENT, "NULL parser argument cannot be destroyed", NULL);
     }
     free(parser->line_buffer);
     if(parser->token_pointers){
@@ -42,14 +39,8 @@ int csv_parser_t_destroy(csv_parser_t* parser){
         }
         free(parser->column_names);
     }
-    return 0;
+    return Ok(VOID);
 }
-
-void csv_parser_t_set_debug_info(csv_parser_t* parser, bool debug_info){
-    if (parser){
-        parser->debug_info = debug_info;
-    }
-};
 
 // Handling of frequent quote flag logic to handle quoted values in the csv file.
 
@@ -61,7 +52,7 @@ static QuoteFlag csv_parser_eval_quote_flag(QuoteFlag flag){
     }
 };
 
-static int csv_parser_token_buffer_init(csv_parser_t* parser) {
+static Result csv_parser_token_buffer_init(csv_parser_t* parser) {
 
     QuoteFlag quoteFlag = NO_QUOTE;
     size_t token_count_new = 0;
@@ -94,18 +85,23 @@ static int csv_parser_token_buffer_init(csv_parser_t* parser) {
 
     parser->token_pointers = malloc(sizeof(char *) * (parser->column_count));
     if (!parser->token_pointers) {
-        return -1;
+        return Err(MEMORY_ALLOCATION_ERROR, "token_pointer buffer allocation failed", NULL);
     }
     for (size_t i = 0; i < parser->column_count; ++i) {
         (parser->token_pointers)[i] = NULL;
     }
 
-    return 0;
+    return Ok(VOID);
 }
 
-static int csv_parser_tokenize_and_trim_line(csv_parser_t* parser){
+static Result csv_parser_tokenize_and_trim_line(csv_parser_t* parser){
     QuoteFlag quoteFlag = NO_QUOTE;
     size_t line_length = strlen(parser->line_buffer);
+
+
+    // Logic for marking the values in the read line for deletion. Every line gets processed twice - first here for
+    // marking with \0 and \a, where \0 divides the identified tokens and \a marks the chars for deletion in the following
+    // run. Tokenization logic runs this way with linear complexity.
 
     for (int i = 0; i < line_length; i++){
         if (parser->line_buffer[i] == '"'){
@@ -157,21 +153,21 @@ static int csv_parser_tokenize_and_trim_line(csv_parser_t* parser){
     }
     parser->line_buffer[char_pos] = '\0';
 
-    return 0;
+    return Ok(VOID);
 };
 
-int csv_parser_parse(const char* file_path, csv_parser_t* parser, csv_callback_t callback){
+Result csv_parser_parse(const char* file_path, csv_parser_t* parser, csv_callback_t callback){
 
     if (file_path == NULL || parser == NULL || callback.csv_callback_data == NULL){
-        return -1;
+        return Err(INVALID_FUNCTION_ARGUMENT, "Bad arguments to csv parser function - NULL pointers detected.", NULL);
     }
     FILE* file = fopen(file_path, "r");
     if(!file) {
-        return -1;
+        return Err(FILE_ERROR, "File could not be opened", file_path);
     }
 
     if (getline(&(parser->line_buffer), &(parser->line_buffer_size), file) == -1){
-        return -1;
+        Err(FILE_PARSING_ERROR, "File appears to be empty.", file_path);
     }
     csv_parser_token_buffer_init(parser);
     csv_parser_tokenize_and_trim_line(parser);
@@ -179,13 +175,17 @@ int csv_parser_parse(const char* file_path, csv_parser_t* parser, csv_callback_t
     if (parser->has_header){
        parser->column_names = malloc(sizeof(char*) * parser->column_count);
          if (!parser->column_names){
-              return -1;
+              return Err(MEMORY_ALLOCATION_ERROR, "Column names buffer could not be allocated", file_path);
          }
+
 
          for (size_t i = 0; i < parser->column_count; i++){
                 parser->column_names[i] = malloc(sizeof(char) * strlen(parser->token_pointers[i]));
                 if (!parser->column_names[i]){
-                    return -1;
+                    for (i--;i!=0;i--){
+                        free(parser->column_names[i]);
+                    }
+                    Err(MEMORY_ALLOCATION_ERROR, "Column name sting could not be allocated", file_path);
                 }
                 strcpy(parser->column_names[i], parser->token_pointers[i]);
             }
@@ -196,9 +196,7 @@ int csv_parser_parse(const char* file_path, csv_parser_t* parser, csv_callback_t
         callback.csv_callback_data(parser->line_buffer, parser->column_count, callback.context);
     }
 
-    printf("Calling handler!\n");
-
     fclose(file);
 
-    return 0;
+    return Ok(VOID);
 }
