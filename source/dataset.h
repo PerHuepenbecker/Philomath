@@ -51,19 +51,18 @@ typedef struct {
     double* data_pool;
 } dataset_t;
 
-bool dataset_t_init_from_csv(dataset_t*, const char*);
+Result dataset_t_init_from_csv(dataset_t*, const char*);
 
-void dataset_t_init(dataset_t*, size_t);
+Result dataset_t_init(dataset_t*, size_t);
 
-bool data_handler(const char*,size_t, CTX);
+Result data_handler(const char*,size_t, CTX);
 
 void dataset_t_inspect(dataset_t*, size_t);
 
-void dataset_t_push_data_point(dataset_t*, const double*, size_t);
+Result dataset_t_push_data_point(dataset_t*, const double*, size_t);
 
 void dataset_t_destroy(dataset_t*);
 
-void dataset_t_standardize(dataset_t*);
 
 
 #endif //LINEARREGRESSION_C_COMMON_H

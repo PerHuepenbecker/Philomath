@@ -15,6 +15,13 @@ Result Err(ErrorCode code, const char* message, const char* context) {
     };
 }
 
+Result Err_from(Error err){
+    return (Result){
+        .is_ok = false,
+        .error = {.code = err.code, .message = err.message, .context = err.context}
+    };
+}
+
 Error get_error(Result result){
     return result.error;
 }

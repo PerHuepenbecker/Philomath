@@ -163,6 +163,21 @@ void linear_regression_t_fit(linear_regression_t* linreg, dataset_t* dataset, si
     free(sum_weighted_errors);
 }
 
+void linear_regression_t_predict(linear_regression_t* linreg, double* x_value, double*y){
+    if (x_value == NULL || y == NULL || linreg == NULL || linreg->regr_state == UNTRAINED){
+        fprintf(stderr, "Invalid arguments for prediction\n");
+        return;
+    }
+
+    double prediction = 0.0;
+
+    for (int i = 0; i < linreg->dimensions-1; ++i) {
+        prediction += linreg->weights[i] * x_value[i];
+    }
+    prediction += linreg->bias;
+    *y = prediction;
+}
+
 linear_predictor_t* linear_regression_t_export_predictor(linear_regression_t* regression, size_t index_y){
     if (regression->regr_state != TRAINED){
         fprintf(stderr,"Invalid regression model state - model not trained!\n");
@@ -188,20 +203,7 @@ linear_predictor_t* linear_regression_t_export_predictor(linear_regression_t* re
     }
 }
 
-void linear_regression_t_predict(linear_regression_t* linreg, double* x_value, double*y){
-    if (x_value == NULL || y == NULL || linreg == NULL || linreg->regr_state == UNTRAINED){
-        fprintf(stderr, "Invalid arguments for prediction\n");
-        return;
-    }
 
-    double prediction = 0.0;
-
-    for (int i = 0; i < linreg->dimensions-1; ++i) {
-        prediction += linreg->weights[i] * x_value[i];
-    }
-    prediction += linreg->bias;
-    *y = prediction;
-}
 
 void linear_predictor_t_destroy(linear_predictor_t* predictor){
     free(predictor->weights);

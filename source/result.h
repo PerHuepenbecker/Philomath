@@ -7,6 +7,10 @@
 
 #include <stdbool.h>
 
+
+#define VOID NULL
+#define MAX_LOG_SIZE 128
+
 typedef enum{
     FILE_ERROR,
     FILE_NOT_FOUND_ERROR,
@@ -14,6 +18,8 @@ typedef enum{
     STRUCT_INITIALIZATION_ERROR,
     INVALID_FUNCTION_ARGUMENT,
     MEMORY_ALLOCATION_ERROR,
+    DATA_CONVERSION_ERROR,
+    DATA_CORRUPTION_ERROR,
     INDEX_OUT_OF_BOUNDS_ERROR
 } ErrorCode;
 
@@ -28,7 +34,7 @@ typedef struct {
     const char* context;
 } Error;
 
-#define VOID NULL
+
 
 // Basic result type. The is_ok boolean determines if the Result is valid or not and can be used to shortcut
 // result processing if using with usually void returning functions.
@@ -42,6 +48,8 @@ typedef struct {
 } Result;
 
 Result Err(ErrorCode code, const char* message, const char* context);
+
+Result Err_from(Error error);
 
 Result Ok(void* data);
 

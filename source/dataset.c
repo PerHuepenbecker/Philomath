@@ -4,8 +4,19 @@
 
 #include "dataset.h"
 
-void dataset_t_init(dataset_t* dataset, size_t dimensions){
+// Function to initialize the dataset with a specified number of dimensions. Used if the datasets internal buffers
+// Part of the standard dataset initialization function and the push_data_point function if the dataset supplied her via
+// the function argument is not initialized by now. The function initializes the data_points array with a initial capacity
+// and sets the dimensions attribute of the dataset struct.
+// Waiting for refactoring to a more generic approach to avoid code duplication but for now it works just fine.
+
+Result dataset_t_init(dataset_t* dataset, size_t dimensions){
     dataset -> data_points = malloc(sizeof(data_point_t) * INITIAL_CAPACITY);
+
+    if(!dataset->data_points){
+        return Err(MEMORY_ALLOCATION_ERROR, "Allocation error of data points array", NULL);
+    }
+
     for (int i = 0; i < INITIAL_CAPACITY; ++i) {
         dataset->data_points[i].line = NULL;
     }
@@ -14,20 +25,18 @@ void dataset_t_init(dataset_t* dataset, size_t dimensions){
     dataset -> dimensions = dimensions;
     dataset -> data_pool = malloc(sizeof(double) * INITIAL_CAPACITY * (dimensions));
     dataset -> token_transformation_buffer = NULL;
-    if(dataset -> data_points == NULL || dataset -> data_pool == NULL){
-        fprintf(stderr, "Error: Initial memory allocation failed\n");
-        exit(1);
+    if(dataset -> data_pool == NULL){
+        free(dataset->data_points);
+        return Err(MEMORY_ALLOCATION_ERROR, "Allocation error of data_pool array", NULL);
     }
 }
 
-// Function to initialize the dataset with a specified number of dimensions. Used if the datasets internal buffers
-// Part of the standard dataset initialization function and the push_data_point function if the dataset supplied her via
-// the function argument is not initialized by now. The function initializes the data_points array with a initial capacity
-// and sets the dimensions attribute of the dataset struct.
-// Waiting for refactoring to a more generic approach to avoid code duplication but for now it works just fine.
-
-static void dataset_t_init_memory(dataset_t* dataset, size_t dimensions){
+static Result dataset_t_init_memory(dataset_t* dataset, size_t dimensions){
     dataset -> data_points = malloc(sizeof(data_point_t) * INITIAL_CAPACITY);
+
+    if (!dataset->data_points){
+        return Err(MEMORY_ALLOCATION_ERROR, "Allocation error of data points array", NULL);
+    }
     for (int i = 0; i < INITIAL_CAPACITY; ++i) {
         dataset->data_points[i].line = NULL;
     }
@@ -35,6 +44,10 @@ static void dataset_t_init_memory(dataset_t* dataset, size_t dimensions){
     dataset -> data_points_count = 0;
     dataset -> dimensions = dimensions;
     dataset -> data_pool = malloc(sizeof(double) * INITIAL_CAPACITY * (dimensions));
+    if (!dataset->data_pool){
+        free(dataset->data_points);
+        return Err(MEMORY_ALLOCATION_ERROR, "Allocation error of data_pool array", NULL);
+    }
 }
 
 
@@ -68,7 +81,7 @@ void dataset_t_destroy(dataset_t* dataset) {
         free(dataset -> token_transformation_buffer);
 }
 
-bool data_handler(const char* tokenized_line,size_t token_count, void* context) {
+Result data_handler(const char* tokenized_line,size_t token_count, void* context) {
     dataset_t *dataset = (dataset_t *) context;
 
     // Since the data_handler is the only function to use the token transformation buffer it will be lazily
@@ -79,10 +92,10 @@ bool data_handler(const char* tokenized_line,size_t token_count, void* context) 
 
     if (dataset->token_transformation_buffer == NULL) {
         dataset->token_transformation_buffer = malloc(sizeof(double) * token_count);
-        printf("Allocating token transformation buffer\n");
+        //printf("Allocating token transformation buffer\n");
         if (dataset->token_transformation_buffer == NULL) {
-            fprintf(stderr, "Error: Memory allocation failed\n");
-            return false;
+            //fprintf(stderr, "Error: Memory allocation failed\n");
+            return Err(MEMORY_ALLOCATION_ERROR, "Allocation of token transformation buffer failed.", NULL);
         }
     }
 
@@ -95,28 +108,26 @@ bool data_handler(const char* tokenized_line,size_t token_count, void* context) 
     for (int i = 0; i < token_count; i++) {
         double token_value = strtod(token, &token_end);
         if (token_end == token) {
-            fprintf(stderr, "Error: Conversion of token to double failed\n");
-            return false;
+            char token_buf[MAX_LOG_SIZE];
+            snprintf(token_buf, MAX_LOG_SIZE, "Token: %s", token);
+            return Err(DATA_CONVERSION_ERROR, "Token could not be processed", tokenized_line);
         }
         dataset->token_transformation_buffer[i] = token_value;
 
-        printf("%d = %f\n", i,token_value);
+        //printf("%d = %f\n", i,token_value);
 
         processed_token++;
 
         token = token_end+1;
     }
 
-    printf("Line processed\n");
-
     if (processed_token != token_count) {
-        fprintf(stderr, "Error in data handler callback: Token count does not match x dimensions\n");
-        return false;
+        return Err(DATA_CORRUPTION_ERROR, "Error in data handler callback: Token count does not match x dimensions", tokenized_line);
     }
 
     dataset_t_push_data_point(dataset, dataset->token_transformation_buffer, token_count);
 
-    return true;
+    return Ok(VOID);
 }
 
 // Function to initialize a dataset from a CSV file. The function reads the file line by line.
@@ -124,8 +135,9 @@ bool data_handler(const char* tokenized_line,size_t token_count, void* context) 
 // it relies on proper CSV formatting. The function then reads the remaining lines and stores
 // the data in the dataset struct. The function returns true if the initialization was successful.
 
-bool dataset_t_init_from_csv(dataset_t* dataset, const char* file_path){
+Result dataset_t_init_from_csv(dataset_t* dataset, const char* file_path){
 
+    Result temp_res;
     csv_parser_t parser;
     csv_parser_t_init_std(&parser);
     csv_callback_t callback = {
@@ -133,22 +145,20 @@ bool dataset_t_init_from_csv(dataset_t* dataset, const char* file_path){
             .context = dataset
     };
 
-    if(csv_parser_parse(file_path, &parser, callback) != 0){
-        fprintf(stderr, "Error: Parsing of CSV file failed\n");
-        return false;
+    temp_res = csv_parser_parse(file_path, &parser, callback);
+    if(!temp_res.is_ok){
+        return Err_from(temp_res.error);
     }
 
     if (parser.has_header){
         dataset->column_names = malloc(sizeof(char*) * parser.column_count);
         if (!dataset->column_names){
-            fprintf(stderr, "Error: Memory allocation failed\n");
-            return false;
+            return Err(MEMORY_ALLOCATION_ERROR, "Memory allocation for columm headers of dataset struct failed.", file_path);
         }
         for (size_t i = 0; i < parser.column_count; ++i) {
             dataset->column_names[i] = malloc(sizeof(char) * strlen(parser.column_names[i]));
             if (!dataset->column_names[i]){
-                fprintf(stderr, "Error: Memory allocation failed\n");
-                return false;
+                return Err(MEMORY_ALLOCATION_ERROR, "Memory allocation for column name in dataset struct failed.", file_path);
             }
             strcpy(dataset->column_names[i], parser.column_names[i]);
         }
@@ -156,17 +166,16 @@ bool dataset_t_init_from_csv(dataset_t* dataset, const char* file_path){
 
     csv_parser_t_destroy(&parser);
 
-    return true;
+    return Ok(VOID);
 }
 
 // Function to push a data point to the dataset. The function does the dimension check to allow for manual pushing of data
 // points. The function reallocates memory if the data_points array is full. The data is stored in the data_pool array and
 // referenced via line pointers by the data_points array.
 
-void dataset_t_push_data_point(dataset_t* dataset, const double* data, size_t dimensions) {
+Result dataset_t_push_data_point(dataset_t* dataset, const double* data, size_t dimensions) {
     if (dimensions != dataset -> dimensions) {
-        fprintf(stderr, "Error: Dimensions of x do not match dataset dimensions\n");
-        return;
+        return Err(DATA_CORRUPTION_ERROR, "Dimensions of dataset and data point do not match", NULL);
     }
 
     if(dataset->data_points_capacity == 0){
@@ -179,16 +188,14 @@ void dataset_t_push_data_point(dataset_t* dataset, const double* data, size_t di
 
         double* tmp_pool = realloc(dataset -> data_pool, sizeof(double)  * (dimensions) * dataset -> data_points_capacity * GROWTH_FACTOR);
         if(tmp_pool == NULL){
-            fprintf(stderr, "Error: Memory allocation failed\n");
-            return;
+            return Err(MEMORY_ALLOCATION_ERROR, "Memory Allocation of data_pool failed", NULL);
         }
 
         dataset -> data_pool = tmp_pool;
 
         void* tmp = realloc(dataset -> data_points, dataset->data_points_capacity * GROWTH_FACTOR);
         if(tmp == NULL){
-            fprintf(stderr, "Error: Memory allocation failed\n");
-            return;
+            return Err(MEMORY_ALLOCATION_ERROR, "Reallocation of data_points failed", NULL);
         }
 
         dataset -> data_points = tmp;
@@ -215,6 +222,6 @@ void dataset_t_push_data_point(dataset_t* dataset, const double* data, size_t di
     dataset -> data_points[dataset -> data_points_count].line = &dataset -> data_pool[dataset -> data_points_count * (dimensions)];
     dataset -> data_points_count++;
 
-    printf("Data point pushed\n");
+    return Ok(VOID);
 }
 

@@ -158,6 +158,8 @@ static Result csv_parser_tokenize_and_trim_line(csv_parser_t* parser){
 
 Result csv_parser_parse(const char* file_path, csv_parser_t* parser, csv_callback_t callback){
 
+    Result tmp;
+
     if (file_path == NULL || parser == NULL || callback.csv_callback_data == NULL){
         return Err(INVALID_FUNCTION_ARGUMENT, "Bad arguments to csv parser function - NULL pointers detected.", NULL);
     }
@@ -169,8 +171,15 @@ Result csv_parser_parse(const char* file_path, csv_parser_t* parser, csv_callbac
     if (getline(&(parser->line_buffer), &(parser->line_buffer_size), file) == -1){
         Err(FILE_PARSING_ERROR, "File appears to be empty.", file_path);
     }
-    csv_parser_token_buffer_init(parser);
-    csv_parser_tokenize_and_trim_line(parser);
+
+    tmp = csv_parser_token_buffer_init(parser);
+    if (!tmp.is_ok) {
+        return Err(tmp.error.code, tmp.error.message, tmp.error.context);
+    }
+    tmp = csv_parser_tokenize_and_trim_line(parser);
+    if(!tmp.is_ok){
+        return Err(tmp.error.code, tmp.error.message, tmp.error.context);
+    }
 
     if (parser->has_header){
        parser->column_names = malloc(sizeof(char*) * parser->column_count);

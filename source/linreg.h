@@ -11,7 +11,7 @@
 #include <stdbool.h>
 #include <float.h>
 #include "preprocessor.h"
-#include "common.h"
+#include "dataset.h"
 
 typedef enum {
     UNTRAINED,
