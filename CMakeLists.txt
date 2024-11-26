@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.27)
 
-project(SimpleLinearRegression C)
+project(Philomath C)
 
 include(ctest)
 
