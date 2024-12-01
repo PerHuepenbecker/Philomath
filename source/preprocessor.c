@@ -4,22 +4,24 @@
 
 #include "preprocessor.h"
 #include "math.h"
+#include "result.h"
 
 // Initializer for the preprocessor
-void preprocessor_t_init(preprocessor_t* preprocessor, size_t dimensions){
+Result preprocessor_t_init(preprocessor_t* preprocessor, size_t dimensions){
     preprocessor->dimensions = dimensions;
     preprocessor->column_means = calloc(dimensions, sizeof(double));
     preprocessor->state = NO_STANDARDIZATION;
     if (preprocessor->column_means == NULL) {
-        fprintf(stderr, "Error: Memory allocation failed\n");
-        exit(1);
+        return Err(MEMORY_ALLOCATION_ERROR, "Memory allocation failed", NULL);
     }
+
     preprocessor->column_stds = calloc(dimensions, sizeof(double));
     if (preprocessor->column_stds == NULL) {
         free(preprocessor->column_means);
-        fprintf(stderr, "Error: Memory allocation failed\n");
-        exit(1);
+        return Err(MEMORY_ALLOCATION_ERROR, "Memory allocation failed", NULL);
     }
+
+    return Ok(VOID);
 }
 
 // destructor for the preprocessor
@@ -30,11 +32,12 @@ void preprocessor_t_destroy(preprocessor_t* preprocessor){
 
 // Function to fit the preprocessor to the dataset. The function calculates the mean and standard deviation for each column
 
-bool preprocessor_t_fit(preprocessor_t* preprocessor, dataset_t* dataset){
+Result preprocessor_t_fit(preprocessor_t* preprocessor, dataset_t* dataset){
 
     if(preprocessor->dimensions != dataset->dimensions){
         fprintf(stderr, "Error: Dimensions of preprocessor do not match dataset dimensions\n");
-        return false;
+
+        return Err(DATA_CORRUPTION_ERROR, "Dimensions of preprocessor do not match dataset dimensions", NULL);
     }
     // calculate the mean for each column
     for(size_t i = 0; i < preprocessor->dimensions; i++){
@@ -53,22 +56,21 @@ bool preprocessor_t_fit(preprocessor_t* preprocessor, dataset_t* dataset){
 
     preprocessor->state = DATASET_FITTED;
 
-    return true;
+    return Ok(VOID);
 }
 
 // Function to standardize the features of the dataset. The function takes a initialized preprocessor and a dataset as
 // input and modifies the dataset in place. The function standardizes the features of the dataset by performing the
 // z-score normalization.
 
-void preprocessor_t_transform(preprocessor_t* preprocessor, dataset_t* dataset){
-    if(preprocessor->dimensions != dataset->dimensions){
-        fprintf(stderr, "Error: Dimensions of preprocessor do not match dataset dimensions\n");
-        return;
+Result preprocessor_t_transform(preprocessor_t* preprocessor, dataset_t* dataset){
+    if (preprocessor->dimensions != dataset->dimensions){
+        return Err(DATA_CORRUPTION_ERROR, "Dimensions of preprocessor do not match dataset dimensions", NULL);
     }
 
     if(preprocessor->state != DATASET_FITTED){
-        fprintf(stderr, "Error: Preprocessor not fitted\n");
-        return;
+        fprintf(stderr, "Error: Dataset currently not fitted! - Fitting dataset...\n");
+        preprocessor_t_fit(preprocessor, dataset);
     }
 
     for(size_t i = 0; i<preprocessor->dimensions; i++){
@@ -82,6 +84,8 @@ void preprocessor_t_transform(preprocessor_t* preprocessor, dataset_t* dataset){
         }
 
     preprocessor->state = DATASET_STANDARDIZED;
+
+    return Ok(VOID);
 }
 
 // Helper function to fit and transform the dataset in one step
@@ -94,29 +98,28 @@ void preprocessor_t_fit_and_transform (preprocessor_t* preprocessor, dataset_t* 
 // Getter method for the column means - necessary for the linear regression model to make predictions based on the
 // standardized data set.
 
-void preprocessor_t_get_column_means(preprocessor_t* preprocessor, double* buffer){
+Result preprocessor_t_get_column_means(preprocessor_t* preprocessor, double* buffer){
     if (preprocessor->state == DATASET_FITTED){
         memcpy(buffer, preprocessor->column_means, preprocessor->dimensions * sizeof(double));
-        return;
+        return Ok(VOID);
     }
-    fprintf(stderr, "Error: Dataset currently not fitted!\n");
+    return Err(INVALID_STATE_ERROR, "Dataset currently not fitted", NULL);
 }
 
 // Getter method for the column standard deviations - necessary for the linear regression model to make predictions based on the
 // standardized data set.
 
-void preprocessor_t_get_column_stds(preprocessor_t* preprocessor, double* buffer){
+Result preprocessor_t_get_column_stds(preprocessor_t* preprocessor, double* buffer){
     if(preprocessor->state == DATASET_FITTED){
         memcpy(buffer, preprocessor->column_stds, preprocessor->dimensions * sizeof(double));
-        return;
+        Ok(VOID);
     }
-    fprintf(stderr, "Error: Dataset currently not fitted!\n");
+    return Err(INVALID_STATE_ERROR, "Dataset currently not fitted", NULL);
 }
 
-void preprocessor_t_unnormalize(preprocessor_t* preprocessor, dataset_t* dataset){
+Result preprocessor_t_unnormalize(preprocessor_t* preprocessor, dataset_t* dataset){
     if(preprocessor->state != DATASET_STANDARDIZED){
-        fprintf(stderr, "Error: Dataset currently not standardized!\n");
-        return;
+        return Err(INVALID_STATE_ERROR, "Dataset currently not standardized", NULL);
     }
 
     for(size_t i = 0; i<preprocessor->dimensions; i++){
@@ -129,5 +132,8 @@ void preprocessor_t_unnormalize(preprocessor_t* preprocessor, dataset_t* dataset
             }
         }
 
+    preprocessor->state = DATASET_FITTED;
+
+    return Ok(VOID);
 }
 
