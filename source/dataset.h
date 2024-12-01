@@ -53,19 +53,17 @@ typedef struct {
 
 Result dataset_t_init_from_csv(dataset_t*, const char*);
 
-Result dataset_t_init(dataset_t*, size_t);
+Result dataset_t_init(dataset_t* dataset, size_t dimensions);
 
-// Possible refactoring option here since the data_handler is actually ml-method specific and not
-// dataset specific
 Result data_handler(const char*,size_t, CTX);
 
 Result data_handler_token_pointer(char** token_pointers, size_t token_count, CTX context);
 
-void dataset_t_inspect(dataset_t*, size_t);
+void dataset_t_inspect(dataset_t* dataset, size_t num_data_points);
 
-Result dataset_t_push_data_point(dataset_t*, const double*, size_t);
+Result dataset_t_push_data_point(dataset_t* dataset, const double* data, size_t dimensions);
 
-void dataset_t_destroy(dataset_t*);
+void dataset_t_destroy(dataset_t* dataset);
 
 
 
