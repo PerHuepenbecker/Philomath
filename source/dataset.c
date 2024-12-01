@@ -112,7 +112,7 @@ Result data_handler_token_pointer(char ** token_pointer, size_t token_count, voi
 
     dataset_t_push_data_point(dataset, dataset->token_transformation_buffer, token_count);
 
-    Ok(VOID);
+    return Ok(VOID);
 }
 
 Result data_handler(const char* tokenized_line,size_t token_count, void* context) {
@@ -203,6 +203,45 @@ Result dataset_t_init_from_csv(dataset_t* dataset, const char* file_path){
     return Ok(VOID);
 }
 
+
+// Function to reallocate memory for the dataset. The function reallocates memory for the data_points array and
+// the data_pool array.
+
+Result dataset_t_reallocate_memory(dataset_t* dataset){
+
+    printf("Reallocating memory\n");
+
+    double* tmp_pool = realloc(dataset -> data_pool, sizeof(double)  * (dataset-> dimensions) * dataset -> data_points_capacity * GROWTH_FACTOR);
+    if(tmp_pool == NULL){
+        return Err(MEMORY_ALLOCATION_ERROR, "Memory Allocation of data_pool failed", NULL);
+    }
+
+    dataset -> data_pool = tmp_pool;
+
+    void* tmp = realloc(dataset -> data_points, dataset->data_points_capacity * GROWTH_FACTOR);
+    if(tmp == NULL){
+        return Err(MEMORY_ALLOCATION_ERROR, "Reallocation of data_points failed", NULL);
+    }
+
+    dataset -> data_points = tmp;
+
+    // Update of the stored pointers of the data_points array structs. Neccessary because
+    // realloc might invalidate the existing pointers on reallocation if the data pool gets
+    // displaced.
+
+    for(size_t i = 0; i < dataset->data_points_count; i++){
+        dataset->data_points[i].line = &dataset->data_pool[i * (dataset->dimensions)];
+    }
+
+    for (size_t i = dataset->data_points_count; i < dataset->data_points_capacity; i++){
+        dataset->data_points[i].line = NULL;
+    }
+
+    dataset -> data_points_capacity *= GROWTH_FACTOR;
+
+    return Ok(NULL);
+}
+
 // Function to push a data point to the dataset. The function does the dimension check to allow for manual pushing of data
 // points. The function reallocates memory if the data_points array is full. The data is stored in the data_pool array and
 // referenced via line pointers by the data_points array.
@@ -218,35 +257,11 @@ Result dataset_t_push_data_point(dataset_t* dataset, const double* data, size_t 
 
     if(dataset -> data_points_capacity - dataset -> data_points_count == 0){
 
-        printf("Reallocating memory\n");
-
-        double* tmp_pool = realloc(dataset -> data_pool, sizeof(double)  * (dimensions) * dataset -> data_points_capacity * GROWTH_FACTOR);
-        if(tmp_pool == NULL){
-            return Err(MEMORY_ALLOCATION_ERROR, "Memory Allocation of data_pool failed", NULL);
+        Result tmp_res = dataset_t_reallocate_memory(dataset);
+        if(!tmp_res.is_ok){
+            return Err_from(tmp_res.error);
         }
 
-        dataset -> data_pool = tmp_pool;
-
-        void* tmp = realloc(dataset -> data_points, dataset->data_points_capacity * GROWTH_FACTOR);
-        if(tmp == NULL){
-            return Err(MEMORY_ALLOCATION_ERROR, "Reallocation of data_points failed", NULL);
-        }
-
-        dataset -> data_points = tmp;
-
-        // Update of the stored pointers of the data_points array structs. Neccessary because
-        // realloc might invalidate the existing pointers on reallocation if the data pool gets
-        // displaced.
-
-        for(size_t i = 0; i < dataset->data_points_count; i++){
-            dataset->data_points[i].line = &dataset->data_pool[i * (dimensions)];
-        }
-
-        for (size_t i = dataset->data_points_count; i < dataset->data_points_capacity; i++){
-            dataset->data_points[i].line = NULL;
-        }
-
-        dataset -> data_points_capacity *= GROWTH_FACTOR;
     }
 
     for(int i = 0; i < dimensions; i++){
