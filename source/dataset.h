@@ -16,6 +16,7 @@
 #define GROWTH_THRESHOLD 1<<20
 #define INITIAL_CAPACITY 10
 #define STANDARD_BUFFER_SIZE 1024
+#define STANDARD_LABEL_BUFFER_SIZE 256
 
 // Standard DataPoint struct for x and y values. The attributes x and y are defined as pointers to
 // allow for separate caching of the values.
@@ -32,6 +33,28 @@ enum ParseMode {
     READ_COLUMN_NAMES
 };
 
+// Data type enum for possible handling of labeled and unlabeled data to be parsed form csv or other sources
+// since labeled data requires different handling
+
+typedef enum {
+    LABELED_DATA,
+    UNLABELED_DATA
+} DATA_TYPE;
+
+typedef enum {
+    UNINITIALIZED,
+    INITIALIZED,
+    CORRUPTED
+} DATASET_STATE;
+
+// Struct for handling the data labels. Double numerical for either numerical labels or transformated texttual labels
+// Optional char* for textual labels from csv
+
+typedef struct {
+    double numerical_label;
+    char* text_label;
+} data_label;
+
 typedef void* CTX;
 
 // Data structure for handling the dataset consisting of DataPoints + Owner of all allocated
@@ -46,14 +69,22 @@ typedef struct {
     size_t data_points_capacity;
     size_t data_points_count;
     size_t dimensions;
+
     char** column_names;
     double* token_transformation_buffer;
     double* data_pool;
+
+    DATASET_STATE state;
+    DATA_TYPE data_type;
+
+    size_t labels_capacity;
+    size_t labels_count;
+    char** labels;
 } dataset_t;
 
-Result dataset_t_init_from_csv(dataset_t*, const char*);
+Result dataset_t_init_from_csv(dataset_t*, const char*,  DATA_TYPE data_type);
 
-Result dataset_t_init(dataset_t* dataset, size_t dimensions);
+Result dataset_t_init(dataset_t* dataset, size_t dimensions, DATA_TYPE);
 
 Result data_handler(const char*,size_t, CTX);
 
@@ -62,9 +93,10 @@ Result data_handler_token_pointer(char** token_pointers, size_t token_count, CTX
 void dataset_t_inspect(dataset_t* dataset, size_t num_data_points);
 
 Result dataset_t_push_data_point(dataset_t* dataset, const double* data, size_t dimensions);
+Result dataset_t_push_label(dataset_t* dataset, char* token_pointer, double label_index);
+
 
 void dataset_t_destroy(dataset_t* dataset);
-
 
 
 #endif //LINEARREGRESSION_C_COMMON_H
