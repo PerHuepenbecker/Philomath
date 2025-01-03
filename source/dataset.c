@@ -135,9 +135,11 @@ Result data_handler_token_pointer(char ** token_pointer, size_t token_count, voi
 
     if (dataset->data_type == LABELED_DATA) {
         double label_index = 0.0;
-        dataset_t_push_label(dataset, token_pointer[data_end], label_index);
+        dataset_t_push_label(dataset, token_pointer[data_end], &label_index);
         data_end-=1;
-        dataset->token_transformation_buffer[data_end] = label_index;
+        if(label_index >= 0.0) {
+            dataset->token_transformation_buffer[data_end] = label_index;
+        }
     }
 
     for (int i = 0; i < data_end; i++) {
@@ -195,27 +197,37 @@ static Result reallocate_label_buffer(dataset_t* dataset){
     return Ok(VOID);
 }
 
-Result dataset_t_push_label(dataset_t* dataset, char* token_pointer, double label_index) {
+Result dataset_t_push_label(dataset_t* dataset, char* token_pointer, double* label_index) {
+
+    bool exists = false;
 
     if(dataset->labels_count == dataset->labels_capacity) {
         reallocate_label_buffer(dataset);
     }
 
-    char *tmp = malloc(sizeof(char) * strlen(token_pointer) + 1);
-    if (tmp == NULL) {
-        return Err(MEMORY_ALLOCATION_ERROR,
-                   "[DATASET_T_PUSH_LABEL] Memory allocation error while allocating next label buffer", NULL);
+    for(size_t i = 0; i < dataset->labels_count; i++){
+        if(strcmp(dataset->labels[i], token_pointer) != 0){
+            exists = true;
+        }
     }
 
-    dataset->labels[dataset->labels_count] = tmp;
-    strcpy(dataset->labels[dataset->labels_count], token_pointer);
-    label_index = (double) dataset->labels_count;
-    dataset->labels_count++;
+    if(!exists) {
+        char *tmp = malloc(sizeof(char) * strlen(token_pointer) + 1);
+        if (tmp == NULL) {
+            return Err(MEMORY_ALLOCATION_ERROR,
+                       "[DATASET_T_PUSH_LABEL] Memory allocation error while allocating next label buffer", NULL);
+        }
+
+        dataset->labels[dataset->labels_count] = tmp;
+        strcpy(dataset->labels[dataset->labels_count], token_pointer);
+        *label_index = (double) dataset->labels_count;
+        dataset->labels_count++;
+    } else {
+        *label_index = -1.0;
+    }
 
     return Ok(VOID);
 }
-
-
 
 
 Result data_handler(const char* tokenized_line,size_t token_count, void* context) {

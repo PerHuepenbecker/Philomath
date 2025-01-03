@@ -93,7 +93,7 @@ Result data_handler_token_pointer(char** token_pointers, size_t token_count, CTX
 void dataset_t_inspect(dataset_t* dataset, size_t num_data_points);
 
 Result dataset_t_push_data_point(dataset_t* dataset, const double* data, size_t dimensions);
-Result dataset_t_push_label(dataset_t* dataset, char* token_pointer, double label_index);
+Result dataset_t_push_label(dataset_t* dataset, char* token_pointer, double* label_index);
 
 
 void dataset_t_destroy(dataset_t* dataset);
