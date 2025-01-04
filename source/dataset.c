@@ -118,6 +118,7 @@ Result data_handler_token_pointer(char ** token_pointer, size_t token_count, voi
 
     if (dataset->state == UNINITIALIZED) {
         dataset->dimensions = token_count;
+        printf("Initialized with %zu dimensions\n", dataset->dimensions);
         dataset->state = INITIALIZED;
     }
 
@@ -134,11 +135,15 @@ Result data_handler_token_pointer(char ** token_pointer, size_t token_count, voi
     // Manages the label handling for the dataset and stores the label index of the pushed or already existing label back into the label_index argument
 
     if (dataset->data_type == LABELED_DATA) {
+
+        printf("Labeled Data detected!\n");
+
         double label_index = 0.0;
-        dataset_t_push_label(dataset, token_pointer[data_end], &label_index);
+        dataset_t_push_label(dataset, token_pointer[data_end-1], &label_index);
         data_end-=1;
         if(label_index >= 0.0) {
             dataset->token_transformation_buffer[data_end] = label_index;
+            printf("Pushed label index %f\n", label_index);
         }
     }
 
@@ -150,15 +155,22 @@ Result data_handler_token_pointer(char ** token_pointer, size_t token_count, voi
             return Err(DATA_CONVERSION_ERROR, "[DATA_HANDLER_TOKEN_POINTER] Token could not be processed", token_buf);
         }
         dataset->token_transformation_buffer[i] = token_value;
+        printf("%f\n", token_value);
         processed_token++;
     }
 
-    if (processed_token!=token_count){
+    printf("Token processed!\n");
+
+    if (processed_token != (token_count - 1 * (dataset->data_type == LABELED_DATA))){
+        printf("Bad token count %d != %d\n", processed_token, token_count);
         return Err(DATA_CORRUPTION_ERROR, "[DATA_HANDLER_TOKEN_POINTER] Error in data handler callback: Token count does not match x dimensions", NULL);
     }
 
+    printf("Point pushed!\n");
 
     dataset_t_push_data_point(dataset, dataset->token_transformation_buffer, token_count);
+
+
 
     return Ok(VOID);
 }
@@ -206,7 +218,10 @@ Result dataset_t_push_label(dataset_t* dataset, char* token_pointer, double* lab
     }
 
     for(size_t i = 0; i < dataset->labels_count; i++){
-        if(strcmp(dataset->labels[i], token_pointer) != 0){
+
+        printf("Comparing %s to %s\n", dataset->labels[i], token_pointer);
+
+        if(strcmp(dataset->labels[i], token_pointer) == 0){
             exists = true;
         }
     }
@@ -290,6 +305,8 @@ Result dataset_t_init_from_csv(dataset_t* dataset, const char* file_path, DATA_T
 
     dataset->state = UNINITIALIZED;
     dataset->labels_count = 0;
+    dataset->data_points_capacity = 0;
+
     temp_res = dataset_t_init_allocate_label_array(dataset, data_type);
     if (!temp_res.is_ok){
         return Err_from(temp_res.error);
@@ -397,3 +414,8 @@ Result dataset_t_push_data_point(dataset_t* dataset, const double* data, size_t 
     return Ok(VOID);
 }
 
+void dataset_t_print_labels(dataset_t* dataset) {
+    for (size_t i = 0; i < dataset->labels_count; ++i) {
+        printf("%d : %s\n", i, dataset->labels[i]);
+    }
+};
