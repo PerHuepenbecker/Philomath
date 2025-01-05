@@ -7,10 +7,14 @@
 #include "result.h"
 
 // Initializer for the preprocessor
-Result preprocessor_t_init(preprocessor_t* preprocessor, size_t dimensions){
+Result preprocessor_t_init(preprocessor_t* preprocessor, size_t dimensions, target_transformation_option target_transform){
     preprocessor->dimensions = dimensions;
+    preprocessor->target_transform = target_transform;
     preprocessor->column_means = calloc(dimensions, sizeof(double));
     preprocessor->state = NO_STANDARDIZATION;
+
+    printf("[PREPROCESSOR] Base types initialized\n");
+
     if (preprocessor->column_means == NULL) {
         return Err(MEMORY_ALLOCATION_ERROR, "Memory allocation failed", NULL);
     }
@@ -34,13 +38,13 @@ void preprocessor_t_destroy(preprocessor_t* preprocessor){
 
 Result preprocessor_t_fit(preprocessor_t* preprocessor, dataset_t* dataset){
 
-    if(preprocessor->dimensions != dataset->dimensions){
+    if(preprocessor->dimensions-(preprocessor->target_transform) != dataset->dimensions-(preprocessor->target_transform)){
         fprintf(stderr, "Error: Dimensions of preprocessor do not match dataset dimensions\n");
 
         return Err(DATA_CORRUPTION_ERROR, "Dimensions of preprocessor do not match dataset dimensions", NULL);
     }
     // calculate the mean for each column
-    for(size_t i = 0; i < preprocessor->dimensions; i++){
+    for(size_t i = 0; i < preprocessor->dimensions-(preprocessor->target_transform); i++){
         double sum = 0.0, sum_sq = 0.0, mean = 0.0;
 
         for(size_t j = 0;j < dataset->data_points_count; j++){
@@ -64,7 +68,7 @@ Result preprocessor_t_fit(preprocessor_t* preprocessor, dataset_t* dataset){
 // z-score normalization.
 
 Result preprocessor_t_transform(preprocessor_t* preprocessor, dataset_t* dataset){
-    if (preprocessor->dimensions != dataset->dimensions){
+    if (preprocessor->dimensions-(preprocessor->target_transform) != dataset->dimensions- (preprocessor->target_transform)){
         return Err(DATA_CORRUPTION_ERROR, "Dimensions of preprocessor do not match dataset dimensions", NULL);
     }
 
@@ -73,12 +77,15 @@ Result preprocessor_t_transform(preprocessor_t* preprocessor, dataset_t* dataset
         preprocessor_t_fit(preprocessor, dataset);
     }
 
-    for(size_t i = 0; i<preprocessor->dimensions; i++){
+    for(size_t i = 0; i<preprocessor->dimensions-(preprocessor->target_transform); i++){
 
             double mean = preprocessor->column_means[i];
             double std = preprocessor->column_stds[i];
 
             for (size_t j = 0; j < dataset->data_points_count; j++){
+
+                printf("[PREPROCESSOR] Transforming %f to %f\n", dataset->data_points[j].line[i], (dataset->data_points[j].line[i] - mean) / std);
+
                 dataset->data_points[j].line[i] = (dataset->data_points[j].line[i] - mean) / std;
             }
         }
@@ -122,7 +129,7 @@ Result preprocessor_t_unnormalize(preprocessor_t* preprocessor, dataset_t* datas
         return Err(INVALID_STATE_ERROR, "Dataset currently not standardized", NULL);
     }
 
-    for(size_t i = 0; i<preprocessor->dimensions; i++){
+    for(size_t i = 0; i<preprocessor->dimensions - (preprocessor->target_transform); i++){
 
             double mean = preprocessor->column_means[i];
             double std = preprocessor->column_stds[i];

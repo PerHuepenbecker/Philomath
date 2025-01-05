@@ -8,6 +8,11 @@
 #include "dataset.h"
 
 typedef enum {
+    TARGET_TRANSFORM,
+    NO_TARGET_TRANSFORM
+} target_transformation_option;
+
+typedef enum {
     DATASET_FITTED,
     DATASET_STANDARDIZED,
     NO_STANDARDIZATION,
@@ -18,12 +23,13 @@ typedef struct {
     size_t dimensions;
     double* column_means;
     double* column_stds;
-    bool standardize_features;
-    bool standardize_target;
+
+    target_transformation_option target_transform;
+
     data_state_t state;
 } preprocessor_t;
 
-Result preprocessor_t_init(preprocessor_t*, size_t);
+Result preprocessor_t_init(preprocessor_t*, size_t, target_transformation_option);
 void preprocessor_t_destroy(preprocessor_t*);
 
 Result preprocessor_t_fit(preprocessor_t*, dataset_t*);

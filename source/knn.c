@@ -4,8 +4,6 @@
 
 #include "knn.h"
 
-
-
 Result kNN_t_init(kNN_t* knn,dataset_t* dataset, size_t n_value, distance_type distance_value, inference_type inference_value){
     knn->n = n_value;
     knn->dataset = dataset;
@@ -48,32 +46,25 @@ static double kNN_t_euclidian_distance(kNN_t* knn, size_t index, double* data){
 
         double difference = knn->dataset->data_points[index].line[i] - data[i];
 
-        printf("[KNN DISTANCE] Calculating %f - %f \n", knn->dataset->data_points[index].line[i] , data[i]);
+        //printf("[KNN DISTANCE] Calculating %f - %f \n", knn->dataset->data_points[index].line[i] , data[i]);
 
-        printf("[KNN DISTANCE] Pow: %f x %f = %f\n", difference, difference, difference*difference);
+        //printf("[KNN DISTANCE] Pow: %f x %f = %f\n", difference, difference, difference*difference);
         sum += (difference * difference);
 
     }
-    printf("[KNN Distance] Sum: %f\n", sum);
+    //printf("[KNN Distance] Sum: %f\n", sum);
 
-    printf("[KNN Distance] Returning %f\n", sqrt(sum));
+    //printf("[KNN Distance] Returning %f\n", sqrt(sum));
     return sqrt(sum);
 }
 
 static void kNN_t_check_distance(kNN_t* knn, kNN_data* data_buffer, double distance, size_t index_dataset, double y_value_dataset){
 
+
     int candidate_index = -1;
 
+
     for (int i = 0; i < knn->n; i++) {
-
-        if(data_buffer[i].distance == DBL_MAX){
-            data_buffer[i] = (kNN_data){.dataset_idx = index_dataset, .distance = distance, .y_value = y_value_dataset};
-
-            printf("[KNN CHECK DISTANCE] Pushed: Index %zu, Distance %f, Y Value %f \n\n", data_buffer[i].dataset_idx,
-                   data_buffer[i].distance, data_buffer[i].y_value);
-
-            break;
-        }
 
         if(distance < data_buffer[i].distance) {
 
@@ -84,9 +75,10 @@ static void kNN_t_check_distance(kNN_t* knn, kNN_data* data_buffer, double dista
                     candidate_index = i;
                 }
             }
-
         }
     }
+
+    printf("Candidate index: %d\n", candidate_index);
 
     if(candidate_index >= 0) {
 
@@ -100,7 +92,7 @@ static void kNN_t_check_distance(kNN_t* knn, kNN_data* data_buffer, double dista
 
 static void kNN_t_measure_k_distances(kNN_t* knn, kNN_data* data_buffer, double* data, size_t data_dimensions){
 
-    double tmp_distance = 0.0;
+    double tmp_distance;
 
     for (size_t i = 0; i < knn->dataset->data_points_count; i++) {
         tmp_distance = kNN_t_euclidian_distance(knn, i, data);
@@ -145,6 +137,11 @@ double kNN_get_k_average_y_value(kNN_t* knn, kNN_data* data_buffer){
 static Result kNN_regression(kNN_t* knn, kNN_data* data_buffer, double* result, double* data, size_t data_dimensions){
 
     kNN_t_measure_k_distances(knn, data_buffer, data,data_dimensions);
+
+    for (int i = 0; i < knn->n; ++i) {
+        printf("Index: %zu, Distance: %f, Value: %f\n", data_buffer[i].dataset_idx, data_buffer[i].distance, data_buffer[i].y_value);
+    }
+
     double regression_result = kNN_get_k_average_y_value(knn, data_buffer);
 
     *result = regression_result;
