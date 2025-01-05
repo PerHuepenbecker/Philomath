@@ -78,13 +78,12 @@ static void kNN_t_check_distance(kNN_t* knn, kNN_data* data_buffer, double dista
         }
     }
 
-    printf("Candidate index: %d\n", candidate_index);
 
     if(candidate_index >= 0) {
 
-        printf("[KNN CHECK DISTANCE] Replacing at Candidate %d Index %zu, Distance %f, Y Value %f\n", candidate_index, data_buffer[candidate_index].dataset_idx,
+/*        printf("[KNN CHECK DISTANCE] Replacing at Candidate %d Index %zu, Distance %f, Y Value %f\n", candidate_index, data_buffer[candidate_index].dataset_idx,
                data_buffer[candidate_index].distance, data_buffer[candidate_index].y_value);
-        printf("\tWith: Index %zu, Distance %f, Y Value %f\n", index_dataset, distance, y_value_dataset);
+        printf("\tWith: Index %zu, Distance %f, Y Value %f\n", index_dataset, distance, y_value_dataset);*/
 
         data_buffer[candidate_index] = (kNN_data) {.dataset_idx = index_dataset, .distance = distance, .y_value = y_value_dataset};
     }
@@ -137,10 +136,6 @@ double kNN_get_k_average_y_value(kNN_t* knn, kNN_data* data_buffer){
 static Result kNN_regression(kNN_t* knn, kNN_data* data_buffer, double* result, double* data, size_t data_dimensions){
 
     kNN_t_measure_k_distances(knn, data_buffer, data,data_dimensions);
-
-    for (int i = 0; i < knn->n; ++i) {
-        printf("Index: %zu, Distance: %f, Value: %f\n", data_buffer[i].dataset_idx, data_buffer[i].distance, data_buffer[i].y_value);
-    }
 
     double regression_result = kNN_get_k_average_y_value(knn, data_buffer);
 
@@ -253,13 +248,8 @@ Result kNN_t_predict(kNN_t* knn, double* result, double* data, size_t data_dimen
         double mean = knn->preprocessor.column_means[i];
         double std = knn->preprocessor.column_stds[i];
 
-        printf("[KNN Predict] Mean: %f, Std: %f", mean, std);
-
-        printf("[KNN Predict] Transforming input data: %f => %f\n", data[i], (data[i]-mean)/std);
-
         data[i] = (data[i]-mean)/std;
 
-        printf("[KNN Predict] Input data at %d : %f\n", i, data[i]);
     }
 
 
