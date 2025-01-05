@@ -5,6 +5,8 @@
 #ifndef PHILOMATH_KNN_H
 #define PHILOMATH_KNN_H
 
+#define WEIGHT_CONSTANT 1.0/100000
+
 #include "dataset.h"
 #include "result.h"
 #include "math.h"
@@ -23,7 +25,10 @@ typedef enum {
 
 typedef enum {
     REGRESSION,
-    CLASSIFICATION
+    REGRESSION_WEIGHTED,
+    CLASSIFICATION,
+    CLASSIFICATION_WEIGHTED
+
 } inference_type;
 
 // Datastructure to hold the index in the dataset, the distance to the datapoint and the relevant value (label / regression y)
@@ -50,15 +55,22 @@ typedef struct {
     inference_type inference_type;
     dataset_t* dataset;
     preprocessor_t preprocessor;
+    double weight_scaling;
 
 } kNN_t;
 
-Result kNN_t_init(kNN_t* knn,dataset_t* dataset, size_t n_value, distance_type distance_value, inference_type inference_value);
+Result kNN_t_init(kNN_t* knn,
+                  dataset_t* dataset,
+                  size_t n_value,
+                  distance_type distance_value,
+                  inference_type inference_value);
+
 void kNN_t_destroy(kNN_t* knn);
 
 // kNN predictor function for regression or classification. The result will be written to the result pointer.
 
 Result kNN_t_predict(kNN_t* knn, double* result, double* data, size_t data_dimensions);
 
+void kNN_t_set_weight_scaling(kNN_t * knn, double scaler_value);
 
 #endif //PHILOMATH_KNN_H

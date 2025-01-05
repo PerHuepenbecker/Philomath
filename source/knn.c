@@ -9,6 +9,7 @@ Result kNN_t_init(kNN_t* knn,dataset_t* dataset, size_t n_value, distance_type d
     knn->dataset = dataset;
     knn->distance_type = distance_value;
     knn->inference_type = inference_value;
+    knn->weight_scaling = 2.0;
 
     printf("[KNN] Base types initialized\n");
 
@@ -77,9 +78,7 @@ static double kNN_t_euclidian_distance(kNN_t* knn, size_t index, double* data) {
 
 static void kNN_t_check_distance(kNN_t* knn, kNN_data* data_buffer, double distance, size_t index_dataset, double y_value_dataset){
 
-
     int candidate_index = -1;
-
 
     for (int i = 0; i < knn->n; i++) {
 
@@ -94,7 +93,6 @@ static void kNN_t_check_distance(kNN_t* knn, kNN_data* data_buffer, double dista
             }
         }
     }
-
 
     if(candidate_index >= 0) {
 
@@ -150,12 +148,51 @@ double kNN_get_k_average_y_value(kNN_t* knn, kNN_data* data_buffer){
     return sum / (double)knn->n;
 }
 
+double kNN_get_k_average_weighted_y_value(kNN_t* knn, kNN_data* data_buffer){
+
+    double* distance_weights = malloc(sizeof(double) * knn->n);
+
+    if(!distance_weights){
+        fprintf(stderr, "[KNN] Error allocating memory. Exiting...\n");
+        exit(EXIT_FAILURE);
+    }
+
+    for(size_t i = 0; i < knn->n; i++){
+
+        distance_weights[i] = 1 / (pow(data_buffer[i].distance, knn->weight_scaling) + WEIGHT_CONSTANT);
+        printf("Distance weight factor: %zu: %f\n", i, distance_weights[i]);
+    }
+
+    double sum_distances = 0.0;
+    double sum_weights = 0.0;
+
+    for(size_t i = 0; i < knn->n; i++){
+
+        sum_distances += distance_weights[i] * data_buffer[i].y_value;
+        sum_weights += distance_weights[i];
+
+    }
+    free(distance_weights);
+
+    return sum_distances/ sum_weights;
+}
+
 static Result kNN_regression(kNN_t* knn, kNN_data* data_buffer, double* result, double* data, size_t data_dimensions){
 
     kNN_t_measure_k_distances(knn, data_buffer, data,data_dimensions);
 
     double regression_result = kNN_get_k_average_y_value(knn, data_buffer);
 
+    *result = regression_result;
+
+    return Ok(VOID);
+}
+
+static Result kNN_regression_weighted(kNN_t* knn, kNN_data* data_buffer, double* result, double* data, size_t data_dimensions){
+
+    kNN_t_measure_k_distances(knn, data_buffer,data, data_dimensions);
+
+    double regression_result = kNN_get_k_average_weighted_y_value(knn, data_buffer);
     *result = regression_result;
 
     return Ok(VOID);
@@ -269,9 +306,10 @@ Result kNN_t_predict(kNN_t* knn, double* result, double* data, size_t data_dimen
 
     }
 
-
     switch (knn->inference_type){
         case REGRESSION: kNN_regression(knn, data_buffer, result, data, data_dimensions);
+            break;
+        case REGRESSION_WEIGHTED: kNN_regression_weighted(knn, data_buffer, result, data, data_dimensions);
             break;
         case CLASSIFICATION: kNN_classification(knn, data_buffer, result, data, data_dimensions);
             break;
