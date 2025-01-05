@@ -48,7 +48,7 @@ typedef struct {
     distance_type distance_type;
     inference_type inference_type;
     dataset_t* dataset;
-    preprocessor_t* preprocessor;
+    preprocessor_t preprocessor;
 
 } kNN_t;
 
@@ -57,7 +57,7 @@ void kNN_t_destroy(kNN_t* knn);
 
 // kNN predictor function for regression or classification. The result will be written to the result pointer.
 
-Result kNN_t_predict(kNN_t* knn, double* result, double* data, size_t data_dimensions, size_t* index_y);
+Result kNN_t_predict(kNN_t* knn, double* result, double* data, size_t data_dimensions);
 
 
 #endif //PHILOMATH_KNN_H
