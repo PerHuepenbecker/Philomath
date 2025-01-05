@@ -306,6 +306,7 @@ Result dataset_t_init_from_csv(dataset_t* dataset, const char* file_path, DATA_T
     dataset->state = UNINITIALIZED;
     dataset->labels_count = 0;
     dataset->data_points_capacity = 0;
+    dataset->data_points_count = 0;
 
     temp_res = dataset_t_init_allocate_label_array(dataset, data_type);
     if (!temp_res.is_ok){

@@ -5,8 +5,6 @@
 #ifndef SIMPLELINEARREGRESSION_CSV_H
 #define SIMPLELINEARREGRESSION_CSV_H
 
-
-
 #define STANDARD_DELIMITER ','
 #define STANDARD_HAS_HEADER true
 #define STANDARD_LINE_BUFFER_SIZE 1024
@@ -22,11 +20,12 @@
 // The callback functions are called for each line of the csv file.
 
 typedef struct {
+
     Result (*csv_callback_data)(char** token,size_t token_count, void* context);
     //bool (*csv_callback_header)(const char* line,size_t token_count, void* context);
     void* context;
-} csv_callback_t;
 
+} csv_callback_t;
 
 // Definition of the csv_parser_args_t struct to store the csv parsing arguments.
 
@@ -61,6 +60,7 @@ typedef enum{
 } QuoteFlag;
 
 Result csv_parser_t_init_std(csv_parser_t*);
+
 Result csv_parser_t_destroy(csv_parser_t*);
 
 Result csv_parser_parse(const char*, csv_parser_t*, csv_callback_t);
