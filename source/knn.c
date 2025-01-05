@@ -96,7 +96,7 @@ static void kNN_t_measure_k_distances(kNN_t* knn, kNN_data* data_buffer, double*
     for (size_t i = 0; i < knn->dataset->data_points_count; i++) {
         tmp_distance = kNN_t_euclidian_distance(knn, i, data);
 
-        printf("[KNN Distance] Current distance: %f\n", tmp_distance);
+        //printf("[KNN Distance] Current distance: %f\n", tmp_distance);
 
         kNN_t_check_distance(knn, data_buffer, tmp_distance, i, knn->dataset->data_points[i].line[data_dimensions]);
     }
