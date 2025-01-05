@@ -15,6 +15,7 @@
 
 typedef enum {
     EUCLEDIAN,
+    MANHATTAN,
 } distance_type;
 
 // Enum to classify the k-NN task. Regression will in base mode measure the average between the closest data points to

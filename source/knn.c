@@ -38,7 +38,24 @@ Result kNN_t_init(kNN_t* knn,dataset_t* dataset, size_t n_value, distance_type d
     return Ok(VOID);
 }
 
-static double kNN_t_euclidian_distance(kNN_t* knn, size_t index, double* data){
+static double kNN_t_manhattan_distance(kNN_t* knn,size_t index, double * data) {
+
+    double sum = 0.0;
+
+    for(size_t i; i < knn->dataset->dimensions-1; i++) {
+        double difference = knn->dataset->data_points[index].line[i] - data[i];
+
+        if(difference < 0) {
+            difference *= -1;
+        }
+
+        sum += difference;
+    }
+
+    return sum;
+}
+
+static double kNN_t_euclidian_distance(kNN_t* knn, size_t index, double* data) {
 
     double sum = 0.0;
 
