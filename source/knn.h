@@ -8,6 +8,7 @@
 #include "dataset.h"
 #include "result.h"
 #include "math.h"
+#include "preprocessor.h"
 #include "float.h"
 
 // Enum to classify the type of distance used for k-NN tasks.
@@ -47,6 +48,7 @@ typedef struct {
     distance_type distance_type;
     inference_type inference_type;
     dataset_t* dataset;
+    preprocessor_t* preprocessor;
 
 } kNN_t;
 

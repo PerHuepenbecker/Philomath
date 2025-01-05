@@ -4,11 +4,31 @@
 
 #include "knn.h"
 
-// Idee: Array der Größe n mit Wert und Distanz als double-werte. Ggf auch als Index der gespeicherten Datenpunkte
 
 
-// To include: Logik für die k-NN regression über Zwischenindizierungen in separetem buffer von Größe n. Logik für die k-NN Klassifizierung über direkten Zugriff auf Werte und assoziierte Label
+Result kNN_t_init(kNN_t* knn,dataset_t* dataset, size_t n_value, distance_type distance_value, inference_type inference_value){
+    knn->n = n_value;
+    knn->dataset = dataset;
+    knn->distance_type = distance_value;
+    knn->inference_type = inference_value;
 
+    Result res;
+
+    res = preprocessor_t_init(knn->preprocessor, dataset->dimensions);
+    if (!res.is_ok){
+        return Err_from(res.error);
+    }
+    res = preprocessor_t_fit(knn->preprocessor, knn->dataset);
+    if (!res.is_ok){
+        return Err_from(res.error);
+    }
+    res = preprocessor_t_transform(knn->preprocessor, knn->dataset);
+    if (!res.is_ok){
+        return Err_from(res.error);
+    }
+
+    return Ok(VOID);
+}
 
 static double kNN_t_euclidian_distance(kNN_t* knn, const double* data){
 
@@ -45,6 +65,17 @@ static void kNN_t_check_distance(kNN_t* knn, kNN_data* data_buffer, double dista
     }
 }
 
+static void kNN_t_measure_k_distances(kNN_t* knn, kNN_data* data_buffer, double* data, size_t data_dimensions){
+
+    double tmp_distance = 0.0;
+
+    for (size_t i = 0; i < knn->dataset->data_points_count; i++) {
+        tmp_distance = kNN_t_euclidian_distance(knn, data);
+        kNN_t_check_distance(knn, data_buffer, tmp_distance, i, knn->dataset->data_points->line[data_dimensions]);
+    }
+
+}
+
 static Result kNN_t_allocate_data_buffer(kNN_t* knn, kNN_data** data_buffer) {
     kNN_data* tmp = malloc(sizeof (kNN_data) * knn->n);
 
@@ -62,9 +93,23 @@ static Result kNN_t_allocate_data_buffer(kNN_t* knn, kNN_data** data_buffer) {
 }
 
 
+double kNN_get_k_average_y_value(kNN_t* knn, kNN_data* data_buffer){
+
+    double sum = 0.0;
+
+    for(size_t i = 0; i < knn->n; i++) {
+        sum += data_buffer[i].y_value;
+    }
+
+    return sum / (double)knn->n;
+}
+
 static Result kNN_regression(kNN_t* knn, kNN_data* data_buffer, double* result, double* data, size_t data_dimensions){
 
-    printf("Regression currently undefined!\n");
+    kNN_t_measure_k_distances(knn, data_buffer, data,data_dimensions);
+    double regression_result = kNN_get_k_average_y_value(knn, data_buffer);
+
+    *result = regression_result;
 
     return Ok(VOID);
 }
@@ -143,12 +188,7 @@ static Result kNN_classification(kNN_t* knn, kNN_data* data_buffer, double* resu
 
     // Calculate the distance between each point and the data
 
-    double tmp_distance = 0.0;
-
-    for (size_t i = 0; i < knn->dataset->data_points_count; i++) {
-        tmp_distance = kNN_t_euclidian_distance(knn, data);
-        kNN_t_check_distance(knn, data_buffer, tmp_distance, i, knn->dataset->data_points->line[data_dimensions]);
-    }
+    kNN_t_measure_k_distances(knn, data_buffer, data,data_dimensions);
 
     double classification_result = kNN_find_most_frequent_label(knn,data_buffer);
     *result = classification_result;
