@@ -6,7 +6,7 @@ include(ctest)
 
 set(CMAKE_C_STANDARD 11)
 
-add_library(SimpleML
+add_library(Philomath_lib
         source/linreg.h
         source/dataset.c
         source/dataset.h
@@ -16,7 +16,10 @@ add_library(SimpleML
         source/result.h
         source/preprocessor.c
         source/preprocessor.h
-        source/result.c)
+        source/result.c
+        source/knn.c
+        source/knn.h
+)
 
 add_executable(SimpleLinearRegression
         example/main.c)
@@ -36,10 +39,10 @@ add_executable(Test_Preprocessor
         tests/helpers.h
         tests/helpers.c)
 
-target_link_libraries(SimpleLinearRegression PRIVATE SimpleML)
-target_link_libraries(Test_CSV PRIVATE SimpleML)
-target_link_libraries(Test_Dataset PRIVATE SimpleML)
-target_link_libraries(Test_Preprocessor PRIVATE SimpleML)
+target_link_libraries(SimpleLinearRegression PRIVATE Philomath_lib)
+target_link_libraries(Test_CSV PRIVATE Philomath_lib)
+target_link_libraries(Test_Dataset PRIVATE Philomath_lib)
+target_link_libraries(Test_Preprocessor PRIVATE Philomath_lib)
 
 enable_testing()
 
