@@ -420,3 +420,26 @@ void dataset_t_print_labels(dataset_t* dataset) {
         printf("%d : %s\n", i, dataset->labels[i]);
     }
 };
+
+Result dataset_t_map_index(dataset_t* dataset, char** label, double index){
+
+    if(index < 0 || (unsigned int) index >= dataset->labels_count) {
+        return Err(INDEX_OUT_OF_BOUNDS_ERROR, "The given label index is out of bounds of the dataset label buffer",NULL);
+    }
+
+    if (*(label) == NULL) {
+        *(label) = malloc(sizeof(char) * STANDARD_LABEL_BUFFER_SIZE);
+
+        if (*(label) == NULL) {
+            return Err(MEMORY_ALLOCATION_ERROR, "Memory allocation failed for label buffer", NULL);
+        }
+    } else{
+        return Err(INVALID_FUNCTION_ARGUMENT, "Char ** label should be set to NULL", NULL);
+    }
+
+    strncpy(*(label), dataset->labels[(unsigned int) index], STANDARD_LABEL_BUFFER_SIZE - 1);
+
+    (*(label))[STANDARD_LABEL_BUFFER_SIZE - 1] = '\0';
+
+    return Ok(VOID);
+}
